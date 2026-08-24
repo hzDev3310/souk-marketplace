@@ -12,17 +12,6 @@ class OrderItem extends Model {
         'variant_data' => 'array',
     ];
 
-    public static function boot()
-    {
-        parent::boot();
-        static::updated(function ($item) {
-            $item->order->evaluateStatus();
-        });
-        static::deleted(function ($item) {
-            $item->order->evaluateStatus();
-        });
-    }
-
     public function order() { return $this->belongsTo(Order::class); }
     public function product() { return $this->belongsTo(Product::class); }
     public function variant() { return $this->belongsTo(ProductVariant::class); }

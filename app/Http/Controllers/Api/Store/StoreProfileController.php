@@ -9,6 +9,7 @@ use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class StoreProfileController extends Controller
 {
@@ -22,9 +23,10 @@ class StoreProfileController extends Controller
 
         if (!$store) {
             return response()->json([
-                'success' => false,
-                'message' => 'No store associated with this account'
-            ], 404);
+                'success' => true,
+                'data' => null,
+                'message' => 'No store profile created yet.'
+            ]);
         }
 
         return response()->json([
@@ -41,10 +43,11 @@ class StoreProfileController extends Controller
         $store = $request->user()->store;
 
         if (!$store) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No store associated with this account'
-            ], 404);
+            $store = new Store();
+            $store->user_id = $request->user()->id;
+            $store->isActive = false;
+            $store->promo = 0;
+            $store->slug = Str::slug(($request->name_en ?: $request->name_fr ?: $request->name_ar ?: $request->user()->name) . '-' . Str::random(6));
         }
 
         // Validate input
@@ -112,8 +115,9 @@ class StoreProfileController extends Controller
             }
         }
 
-        // Update store
-        $store->update($data);
+        // Update or create store
+        $store->fill($data);
+        $store->save();
 
         return response()->json([
             'success' => true,

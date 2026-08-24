@@ -1,6 +1,7 @@
 import React from 'react';
 import CardBox from '@/components/shared/CardBox';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/context/AuthContext';
 import {
   TrendingUp,
   Users,
@@ -12,12 +13,17 @@ import {
   Activity,
   Calendar,
   Layers,
-  Sparkles
+  Sparkles,
+  AlertCircle,
+  ArrowRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const isProfileIncomplete = user?.role === 'STORE' && user?.store && (!user?.store?.name_en || !user?.store?.name_fr || !user?.store?.name_ar || !user?.store?.matriculeFiscale || !user?.store?.storePhone);
 
   const stats = [
     {
@@ -60,6 +66,36 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8 p-1">
+      {isProfileIncomplete && (
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-yellow-200 bg-yellow-50/70 p-4 dark:border-yellow-800/60 dark:bg-yellow-950/20">
+              <div className="flex items-center gap-3">
+                  <AlertCircle className="h-6 w-6 shrink-0 text-yellow-600 dark:text-yellow-500" />
+                  <div>
+                      <p className="text-sm font-bold text-yellow-900 dark:text-yellow-200">Complete your store profile</p>
+                      <p className="text-xs text-yellow-800 dark:text-yellow-300">Fill in the required store data to unlock your dashboard functionality.</p>
+                  </div>
+              </div>
+              <Link to="/dashboard/profile" className="flex items-center gap-2 rounded-xl bg-yellow-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-yellow-700">
+                  Complete profile
+                  <ArrowRight className="h-4 w-4" />
+              </Link>
+          </div>
+      )}
+
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-3xl font-black text-foreground tracking-tight">
+              {t('sidebar.dashboard')}
+            </h1>
+            <Sparkles className="w-5 h-5 text-primary animate-pulse" />
+          </div>
+          <p className="text-muted-foreground font-medium">
+            {t('dashboard.welcome') || "Welcome back! Here's a summary of your performance."}
+          </p>
+        </div>
+
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -85,6 +121,21 @@ const Dashboard = () => {
           </button>
         </div>
       </div>
+
+      {isProfileIncomplete && (
+        <Link to="/dashboard/profile">
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-yellow-200 bg-yellow-50/70 p-4 dark:border-yellow-800/60 dark:bg-yellow-950/20 hover:bg-yellow-100 transition-colors cursor-pointer">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-yellow-600 dark:text-yellow-500" />
+              <div>
+                <p className="text-sm font-bold text-yellow-900 dark:text-yellow-200">Complete your store profile</p>
+                <p className="mt-1 text-xs text-yellow-800 dark:text-yellow-300">Fill in the required store data (name, description, tax number, phone) to unlock all features.</p>
+              </div>
+            </div>
+            <ArrowRight className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
+          </div>
+        </Link>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -7,8 +7,15 @@ import { useTranslation } from 'react-i18next';
 import SidebarContent from './SidebarItems';
 import * as Icons from 'lucide-react';
 
-const renderSidebarItems = (items, currentPath, isDarkMode, userRole, t, isRTL = false, onClose = () => {}) => {
-  const filteredItems = items.filter(item => !item.roles || item.roles.includes(userRole));
+const renderSidebarItems = (items, currentPath, isDarkMode, userRole, t, isRTL = false, onClose = () => {}, user = null) => {
+  const filteredItems = items.filter(item => {
+    // Hide Profile link for STORE if profile is incomplete
+    if (item.name === 'Profile' && userRole === 'STORE' && user?.store) {
+      const isProfileIncomplete = !user.store.name_en || !user.store.name_fr || !user.store.name_ar || !user.store.matriculeFiscale || !user.store.storePhone;
+      if (isProfileIncomplete) return false;
+    }
+    return !item.roles || item.roles.includes(userRole);
+  });
   
   if (filteredItems.length === 0) return null;
 
@@ -104,7 +111,8 @@ const Sidebar = ({ onClose }) => {
                     userRole,
                     t,
                     isRTL,
-                    onClose
+                    onClose,
+                    user
                   )}
                 </div>
               </div>

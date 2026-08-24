@@ -33,12 +33,12 @@ import AdminProducts from './pages/admin/Products';
 import ProductCreate from './pages/admin/ProductCreate';
 import ProductEdit from './pages/admin/ProductEdit';
 import AdminOrders from './pages/admin/Orders';
-import Parameters from './pages/admin/Parameters';
 import PageEditor from './pages/admin/PageEditor';
 // Store pages
 import StoreProducts from './pages/store/Products';
 import StoreOrders from './pages/store/Orders';
 import StoreProfile from './pages/store/Profile';
+import ProfilePage from './pages/Profile';
 
 // Role-based route wrapper for products list
 const RoleBasedProducts = () => {
@@ -71,8 +71,9 @@ const RoleBasedOrders = () => {
 
 const RoleBasedProfile = () => {
     const { user } = useAuth();
+    if (user?.role === 'ADMIN') return <ProfilePage />;
     if (user?.role === 'STORE') return <StoreProfile />;
-    return <Navigate to="/dashboard" replace />;
+    return <ProfilePage />;
 };
 
 /** Renders child routes under `/dashboard` without extra UI (avoids `/dashboard/*` swallowing `/dashboard/login`). */
@@ -112,9 +113,7 @@ const App = () => {
                         <Route path="products/:id/edit" element={<RoleBasedProductEdit />} />
                         <Route path="orders" element={<RoleBasedOrders />} />
                         <Route path="analytics" element={<div className="p-6 text-link">Analytics Page (Work in Progress)</div>} />
-                        <Route path="parameters" element={<Parameters />} />
                         <Route path="pages/:slug" element={<PageEditor />} />
-                        <Route path="settings" element={<div className="p-6 text-link">Settings Page (Work in Progress)</div>} />
                         <Route path="profile" element={<RoleBasedProfile />} />
                     </Route>
                 </Route>

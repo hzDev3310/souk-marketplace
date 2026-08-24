@@ -132,22 +132,32 @@ const Orders = () => {
     };
 
     const getStatusConfig = (status) => {
-        switch (status) {
-            case "en_cours":
-            case "PENDING":
-                return { label: "En Cours", color: "text-amber-500", bg: "bg-amber-500/10", icon: Clock };
+        switch (String(status || '').toLowerCase()) {
+            case "en_attente":
+            case "pending":
+                return { label: "En attente", color: "text-amber-500", bg: "bg-amber-500/10", icon: Clock };
             case "confirme":
+            case "confirmed":
                 return { label: "Confirmé", color: "text-blue-500", bg: "bg-blue-500/10", icon: CheckCircle2 };
+            case "imported_to_depot":
+            case "imported":
+            case "imported_from_store":
+                return { label: "Importé au dépôt", color: "text-indigo-500", bg: "bg-indigo-500/10", icon: Package };
+            case "en_livraison":
             case "en_shipping":
-                return { label: "Prêt pour expédition", color: "text-indigo-500", bg: "bg-indigo-500/10", icon: Activity };
             case "shipping_company":
-                return { label: "Chez le transporteur", color: "text-purple-500", bg: "bg-purple-500/10", icon: Truck };
+                return { label: "En livraison", color: "text-purple-500", bg: "bg-purple-500/10", icon: Truck };
+            case "livree":
             case "shipped":
-                return { label: "Livré", color: "text-emerald-500", bg: "bg-emerald-500/10", icon: Package };
+            case "delivered":
+                return { label: "Livrée", color: "text-emerald-500", bg: "bg-emerald-500/10", icon: Package };
+            case "retournee":
+            case "returned":
             case "annule":
-                return { label: "Annulé", color: "text-rose-500", bg: "bg-rose-500/10", icon: XCircle };
+            case "cancelled":
+                return { label: "Retournée", color: "text-rose-500", bg: "bg-rose-500/10", icon: XCircle };
             default:
-                return { label: status, color: "text-muted-foreground", bg: "bg-muted/10", icon: Activity };
+                return { label: status || "Inconnu", color: "text-muted-foreground", bg: "bg-muted/10", icon: Activity };
         }
     };
 
@@ -242,7 +252,14 @@ const Orders = () => {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="bg-card border-border/50 rounded-xl">
-                                                    {["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"].map(s => (
+                                                    {[
+                                                        "en_attente",
+                                                        "confirme",
+                                                        "imported_to_depot",
+                                                        "en_livraison",
+                                                        "livree",
+                                                        "retournee",
+                                                    ].map(s => (
                                                         <DropdownMenuItem
                                                             key={s}
                                                             onClick={() => updateStatus(order.id, s)}
@@ -313,9 +330,6 @@ const Orders = () => {
                                                     <status.icon size={12} />
                                                     {status.label}
                                                 </div>
-                                                {order.status === 'PENDING' && order.items_count > 0 && order.items_count === order.confirmed_items_count && (
-                                                    <RefreshCcw className="w-3.5 h-3.5 text-blue-500 animate-spin" />
-                                                )}
                                             </div>
                                         </TableCell>
                                         <TableCell className="py-4 px-6 text-[11px] font-bold text-muted-foreground">
@@ -343,7 +357,14 @@ const Orders = () => {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end" className="bg-card border-border/50 rounded-xl">
-                                                        {["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"].map(s => (
+                                                        {[
+                                                            "en_attente",
+                                                            "confirme",
+                                                            "imported_to_depot",
+                                                            "en_livraison",
+                                                            "livree",
+                                                            "retournee",
+                                                        ].map(s => (
                                                             <DropdownMenuItem 
                                                                 key={s} 
                                                                 onClick={() => updateStatus(order.id, s)}
@@ -379,7 +400,7 @@ const Orders = () => {
                     maxWidth="max-w-4xl"
                     footer={
                         <div className="flex gap-3">
-                             {['en_cours', 'confirme', 'PENDING'].includes(viewingOrder?.status) && (
+                             {['en_attente', 'confirme'].includes(String(viewingOrder?.status || '').toLowerCase()) && (
                                 <Button 
                                     onClick={() => handleVerify(viewingOrder.id)} 
                                     disabled={verifying}
@@ -392,13 +413,14 @@ const Orders = () => {
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" rounded="xl" className="font-black">
-                                        LOGISTIQUE <ChevronDown size={14} />
+                                        STATUT <ChevronDown size={14} />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="rounded-xl border-border/50 bg-background/95 backdrop-blur-xl">
-                                    <DropdownMenuItem onClick={() => updateStatus(viewingOrder.id, 'en_shipping')} className="font-bold text-[10px] uppercase">PRÊT POUR EXPÉDITION</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => updateStatus(viewingOrder.id, 'shipping_company')} className="font-bold text-[10px] uppercase">CHEZ LE TRANSPORTEUR</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => updateStatus(viewingOrder.id, 'shipped')} className="font-bold text-[10px] uppercase">LIVRÉ</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => updateStatus(viewingOrder.id, 'imported_to_depot')} className="font-bold text-[10px] uppercase">IMPORTÉ AU DÉPÔT</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => updateStatus(viewingOrder.id, 'en_livraison')} className="font-bold text-[10px] uppercase">EN LIVRAISON</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => updateStatus(viewingOrder.id, 'livree')} className="font-bold text-[10px] uppercase">LIVRÉE</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => updateStatus(viewingOrder.id, 'retournee')} className="font-bold text-[10px] uppercase">RETOURNÉE</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                             <Button onClick={() => setViewingOrder(null)} rounded="xl" className="font-black bg-muted text-foreground hover:bg-muted/80">
@@ -511,18 +533,9 @@ const Orders = () => {
                                                                             <p className="text-[10px] font-bold text-primary">{item.variant_name}</p>
                                                                         )}
                                                                         <div className="flex items-center gap-2 mt-1">
-                                                                            <DropdownMenu>
-                                                                                <DropdownMenuTrigger asChild>
-                                                                                    <Button variant="ghost" size="xxs" padding="xs" className={`text-[9px] font-black ${item.status === 'confirme' ? 'bg-emerald-500/10 text-emerald-500' : item.status === 'annule' ? 'bg-rose-500/10 text-rose-500' : 'bg-amber-500/10 text-amber-500'}`}>
-                                                                                        {item.status.toUpperCase()} <ChevronDown size={8} className="ml-1" />
-                                                                                    </Button>
-                                                                                </DropdownMenuTrigger>
-                                                                                <DropdownMenuContent align="start" className="rounded-lg border-border/50 bg-background/95 backdrop-blur-xl">
-                                                                                    <DropdownMenuItem onClick={() => updateItemStatus(viewingOrder.id, item.id, 'en_cours')} className="font-bold text-[9px] uppercase">EN COURS</DropdownMenuItem>
-                                                                                    <DropdownMenuItem onClick={() => updateItemStatus(viewingOrder.id, item.id, 'confirme')} className="font-bold text-[9px] uppercase">CONFIRMER</DropdownMenuItem>
-                                                                                    <DropdownMenuItem onClick={() => updateItemStatus(viewingOrder.id, item.id, 'annule')} className="font-bold text-[9px] uppercase">ANNULER</DropdownMenuItem>
-                                                                                </DropdownMenuContent>
-                                                                            </DropdownMenu>
+                                                                            <span className={`inline-flex items-center px-2 py-1 rounded-md text-[9px] font-black ${item.status === 'confirme' ? 'bg-emerald-500/10 text-emerald-500' : item.status === 'annule' ? 'bg-rose-500/10 text-rose-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                                                                                {String(item.status || 'unknown').toUpperCase()}
+                                                                            </span>
                                                                         </div>
                                                                     </div>
                                                                 </div>

@@ -12,7 +12,6 @@ use App\Http\Controllers\Api\Admin\StoreController;
 use App\Http\Controllers\Api\Admin\PageContentController;
 use App\Http\Controllers\Api\Admin\UserManagementController;
 use App\Http\Controllers\Api\Store\StoreOrderController;
-use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\Store\StoreProductController;
 use App\Http\Controllers\Api\Store\StoreProfileController;
 use Illuminate\Support\Facades\Route;
@@ -23,6 +22,8 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout']);
 Route::middleware('auth:sanctum')->get('/me', [AuthController::class, 'me']);
+Route::middleware('auth:sanctum')->post('/profile', [AuthController::class, 'updateProfile']);
+Route::middleware('auth:sanctum')->put('/profile', [AuthController::class, 'updateProfile']);
 Route::middleware('auth:sanctum')->post('/translate/autofill', [\App\Http\Controllers\Api\TranslationController::class, 'autoFill']);
 
 Route::get('/check', [AuthController::class, 'check']);
@@ -55,10 +56,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::apiResource('employees', EmployeeController::class);
 
     // Settings Management
-    Route::get('settings', [SettingController::class, 'index']);
-    Route::put('settings/bulk', [SettingController::class, 'bulkUpdate']);
-    Route::post('settings/upload', [SettingController::class, 'uploadImage']);
-    Route::put('settings/{id}', [SettingController::class, 'update']);
+    // Removed
 
     // Page Content Management (About, Contact)
     Route::get('pages/{slug}', [PageContentController::class, 'show']);

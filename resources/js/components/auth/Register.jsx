@@ -33,10 +33,6 @@ const Register = () => {
         email: '',
         password: '',
         password_confirmation: '',
-        store_name_fr: '',
-        store_name_ar: '',
-        store_name_en: '',
-        matricule_fiscale: '',
     });
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
@@ -112,20 +108,6 @@ const Register = () => {
         </div>
     );
 
-    const renderStoreFields = () => (
-        <div className="space-y-4 pt-4 border-t border-border/50">
-            <div className="space-y-1.5">
-                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-1">{t('auth.register.storeNameFr') || 'Store Name (FR)'}</Label>
-                <Input name="store_name_fr" value={formData.store_name_fr} onChange={handleChange} required placeholder="Mon Magasin" className="bg-muted/30 border-border/50 rounded-xl" />
-                {errors.store_name_fr && <p className="text-error text-[10px] px-1 font-bold">{errors.store_name_fr[0]}</p>}
-            </div>
-            <div className="space-y-1.5">
-                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-1">{t('auth.register.matriculeFiscale') || 'Tax ID (Matricule Fiscale)'}</Label>
-                <Input name="matricule_fiscale" value={formData.matricule_fiscale} onChange={handleChange} required placeholder="1234567890" className="bg-muted/30 border-border/50 rounded-xl" />
-                {errors.matricule_fiscale && <p className="text-error text-[10px] px-1 font-bold">{errors.matricule_fiscale[0]}</p>}
-            </div>
-        </div>
-    );
 
     return (
         <div className="min-h-screen w-full flex flex-col justify-center items-center bg-background text-foreground transition-colors duration-500 relative overflow-hidden py-12">
@@ -182,8 +164,7 @@ const Register = () => {
                                 <div>
                                     <form onSubmit={handleSubmit} className="space-y-6">
                                         {renderCommonFields()}
-                                        {renderStoreFields()}
-                                        
+
                                         {errors.general && <div className="p-4 bg-error/10 text-error rounded-xl text-sm font-bold border border-error/20">{errors.general}</div>}
 
                                         <Button type="submit" disabled={loading} size="hero" rounded="2xl" className="text-lg font-bold shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]">

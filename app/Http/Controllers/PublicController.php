@@ -498,7 +498,7 @@ class PublicController extends Controller
             foreach ($zoneGroups as $group) {
                 $order = Order::create([
                     'client_id' => $client->id,
-                    'status' => 'PENDING',
+                    'status' => 'en_attente',
                     'totalAmount' => $group['total'],
                 ]);
 

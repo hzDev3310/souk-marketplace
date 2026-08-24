@@ -8,6 +8,15 @@ class Order extends Model {
     use HasUuids;
     protected $fillable = ['order_number', 'client_id', 'influencer_id', 'status', 'totalAmount', 'driver_id'];
 
+    public const ORDER_STATUSES = [
+        'en_attente',
+        'confirme',
+        'imported_to_depot',
+        'en_livraison',
+        'livree',
+        'retournee',
+    ];
+
     public static function boot()
     {
         parent::boot();
@@ -24,17 +33,42 @@ class Order extends Model {
     public function factures() { return $this->hasMany(Facture::class); }
     public function driver() { return $this->belongsTo(ShippingEmp::class, 'driver_id'); }
 
+    public static function normalizeStatus(?string $status): ?string
+    {
+        if ($status === null) {
+            return null;
+        }
+
+        $status = strtolower(trim($status));
+
+        $map = [
+            'pending' => 'en_attente',
+            'en_cours' => 'en_attente',
+            'confirmed' => 'confirme',
+            'confirme' => 'confirme',
+            'imported' => 'imported_to_depot',
+            'imported_from_store' => 'imported_to_depot',
+            'imported_to_depot' => 'imported_to_depot',
+            'in_shipping' => 'en_livraison',
+            'en_shipping' => 'en_livraison',
+            'shipping_company' => 'en_livraison',
+            'shipped' => 'livree',
+            'livree' => 'livree',
+            'delivered' => 'livree',
+            'returned' => 'retournee',
+            'retournee' => 'retournee',
+            'annule' => 'retournee',
+        ];
+
+        return $map[$status] ?? $status;
+    }
+
     public function evaluateStatus()
     {
-        $items = $this->items;
-        if ($items->isEmpty()) return;
-
-        // Condition: If ALL items are CONFIRMED, or at least one is CONFIRMED and the rest are CANCELLED
-        $allConfirmedOrCancelled = $items->every(fn($i) => in_array($i->status, ['CONFIRMED', 'CANCELLED']));
-        $atLeastOneConfirmed = $items->where('status', 'CONFIRMED')->count() > 0;
-
-        if ($allConfirmedOrCancelled && $atLeastOneConfirmed) {
-            $this->update(['status' => 'CONFIRMED']);
+        $status = self::normalizeStatus($this->status);
+        if ($status && !in_array($status, self::ORDER_STATUSES, true)) {
+            $this->status = 'en_attente';
+            $this->saveQuietly();
         }
     }
 }

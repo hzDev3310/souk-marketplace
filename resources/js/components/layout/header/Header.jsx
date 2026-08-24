@@ -130,10 +130,6 @@ const Header = ({ onMenuClick }) => {
                 <User size={16} strokeWidth={2.5} className="mr-3 ml-1" />
                 {t('header.profile')}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/dashboard/parameters')} className="rounded-lg py-2.5 cursor-pointer font-bold text-sm text-foreground hover:bg-primary/10 hover:text-primary transition-colors">
-                <Settings size={16} strokeWidth={2.5} className="mr-3 ml-1" />
-                {t('header.settings')}
-              </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-border/50 my-2" />
               <DropdownMenuItem
                 onClick={handleLogout}

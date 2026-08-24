@@ -75,22 +75,10 @@ export const SidebarContent = [
       },
   
       {
-        name: 'Settings',
-        icon: 'Settings',
-        url: '/dashboard/parameters',
-        roles: ['ADMIN'],
-      },
-      {
-        name: 'About Page',
-        icon: 'BookOpen',
-        url: '/dashboard/pages/about',
-        roles: ['ADMIN'],
-      },
-      {
-        name: 'Contact Page',
-        icon: 'MessageCircle',
-        url: '/dashboard/pages/contact',
-        roles: ['ADMIN'],
+        name: 'Profile',
+        icon: 'UserCircle',
+        url: '/dashboard/profile',
+        roles: ['ADMIN', 'STORE', 'INFLUENCER', 'CLIENT'],
       },
     
     ],

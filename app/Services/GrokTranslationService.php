@@ -10,22 +10,36 @@ class GrokTranslationService
 {
     private function apiKey(): ?string
     {
-        return setting('grok_api_key') ?: config('services.grok.api_key');
+        return env('GROQ_API_KEY') ?: setting('groq_api_key') ?: setting('grok_api_key') ?: config('services.groq.api_key');
     }
 
     private function baseUrl(): string
     {
-        return setting('grok_base_url') ?: config('services.grok.base_url', 'https://api.groq.com/openai/v1/chat/completions');
+        return env('GROQ_BASE_URL') ?: setting('groq_base_url') ?: setting('grok_base_url') ?: config('services.groq.base_url', 'https://api.groq.com/openai/v1/chat/completions');
     }
 
     private function model(): string
     {
-        return setting('grok_model') ?: config('services.grok.model', 'llama-3.3-70b-versatile');
+        $candidate = env('GROQ_MODEL') ?: setting('groq_model') ?: setting('grok_model') ?: config('services.groq.model', 'openai/gpt-oss-20b');
+
+        $deprecatedModels = [
+            'llama-3.1-8b-instant',
+            'llama-3.3-70b-versatile',
+            'llama-3.1-70b-versatile',
+            'gemma2-9b-it',
+            'mixtral-8x7b-32768',
+        ];
+
+        return in_array($candidate, $deprecatedModels, true) ? 'openai/gpt-oss-20b' : $candidate;
     }
 
     private function visionModel(): string
     {
-        return setting('grok_vision_model') ?: config('services.grok.vision_model', 'llama-3.2-90b-vision-preview');
+        $candidate = env('GROQ_VISION_MODEL') ?: setting('groq_vision_model') ?: setting('grok_vision_model') ?: config('services.groq.vision_model', 'openai/gpt-oss-20b');
+
+        return in_array($candidate, ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'llama-3.1-70b-versatile', 'gemma2-9b-it', 'mixtral-8x7b-32768'], true)
+            ? 'openai/gpt-oss-20b'
+            : $candidate;
     }
 
     public function isEnabled(): bool
@@ -39,10 +53,33 @@ class GrokTranslationService
             throw new RuntimeException('Grok API key is not configured.');
         }
 
+        $filtered = [];
+        foreach ($data as $key => $value) {
+            if ((str_starts_with($key, 'name_') || str_starts_with($key, 'description_')) && is_string($value)) {
+                $filtered[$key] = $value;
+            }
+        }
+
+        if (empty($filtered)) {
+            return [];
+        }
+
         $baseUrl = rtrim($this->baseUrl(), '/');
         $model = $this->model();
 
-        $prompt = "You are a professional translator. I will provide a JSON object representing fields in different languages (English, French, Arabic, etc.). Some fields have content and some are empty strings. Your task is to accurately translate the content from the filled fields into the appropriate language for the empty fields. Return ONLY a valid JSON object with the exact same keys as the input, where all missing translations have been filled. Do not include markdown formatting like ```json or any other text.\n\nInput JSON:\n" . json_encode($data, JSON_UNESCAPED_UNICODE);
+        $prompt = "You are a professional translator and copywriter. I will provide you with a JSON object containing store or product names and descriptions in one or more languages (English, French, or Arabic).
+
+Your task:
+1. Correct any spelling or grammar issues in the provided text to make it professional.
+2. For every field group (name or description), you MUST provide versions in ALL three languages: English (_en), French (_fr), and Arabic (_ar).
+3. If you receive 'name_en', you must return 'name_en', 'name_fr', and 'name_ar'. Same for 'description'.
+4. Maintain a professional, natural, and marketing-friendly tone for an e-commerce platform.
+5. Ensure the Arabic translation is natural and culturally appropriate.
+
+Return ONLY a valid JSON object containing all these keys. No markdown, no explanations.
+
+Input JSON:
+" . json_encode($filtered, JSON_UNESCAPED_UNICODE);
 
         try {
             $response = Http::timeout(45)
@@ -80,11 +117,33 @@ class GrokTranslationService
             $translatedData = json_decode(trim($responseText), true);
 
             if (json_last_error() === JSON_ERROR_NONE && is_array($translatedData)) {
-                return array_merge($data, $translatedData);
+                $cleanTranslated = [];
+                // Initialize all expected keys to ensure they exist, even if empty
+                $expectedKeys = ['name_en', 'name_fr', 'name_ar', 'description_en', 'description_fr', 'description_ar'];
+                foreach ($expectedKeys as $key) {
+                    $cleanTranslated[$key] = '';
+                }
+
+                foreach ($translatedData as $key => $value) {
+                    $fieldKey = (string) $key;
+
+                    if (str_ends_with($fieldKey, '_es')) {
+                        $fieldKey = preg_replace('/_es$/', '_ar', $fieldKey);
+                    }
+
+                    if ((str_starts_with($fieldKey, 'name_') || str_starts_with($fieldKey, 'description_'))
+                        && preg_match('/^(name|description)_(en|fr|ar)$/', $fieldKey)
+                        && is_string($value)
+                    ) {
+                        $cleanTranslated[$fieldKey] = $value;
+                    }
+                }
+
+                return $cleanTranslated;
             }
 
             Log::error('Grok translation returned invalid JSON', ['response' => $responseText]);
-            return $data;
+            return $filtered;
         } catch (\Exception $e) {
             Log::error('Grok translation failed', ['error' => $e->getMessage()]);
             throw new RuntimeException('Failed to auto-translate: ' . $e->getMessage());

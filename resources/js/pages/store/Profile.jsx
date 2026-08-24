@@ -1,65 +1,96 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '@/context/NotificationContext';
 import api from '@/lib/api';
 import AdminPageLayout from '@/components/shared/AdminPageLayout';
 import CardBox from '@/components/shared/CardBox';
-import GovernorateSelect from '@/components/shared/GovernorateSelect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
-    Building2, Upload, Loader, CheckCircle2, AlertCircle, ImagePlus, Wand2
+    Building2,
+    Upload,
+    Loader,
+    AlertCircle,
+    ImagePlus,
+    Wand2,
+    Save,
+    UserCircle,
+    ShieldCheck,
+    Mail,
 } from 'lucide-react';
 import { validateImageFile } from '@/utils/imageUploadValidation';
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const initialAccountForm = {
+    name: '',
+    family_name: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+};
+
+const initialStoreForm = {
+    name_fr: '',
+    name_ar: '',
+    name_en: '',
+    description_fr: '',
+    description_ar: '',
+    description_en: '',
+    storePhone: '',
+    address: '',
+    responsibleCin: '',
+    matriculeFiscale: '',
+    rib: '',
+    promo: '0',
+};
 
 const StoreProfile = () => {
     const { t } = useTranslation();
     const { user, setUser } = useAuth();
     const { addNotification } = useNotification();
     const [loading, setLoading] = useState(false);
-    const [saving, setSaving] = useState(false);
+    const [imageSaving, setImageSaving] = useState(false);
+    const [storeSaving, setStoreSaving] = useState(false);
+    const [accountSaving, setAccountSaving] = useState(false);
     const [translating, setTranslating] = useState(false);
+    const [accountForm, setAccountForm] = useState(initialAccountForm);
     const [logoPreview, setLogoPreview] = useState(null);
     const [coverPreview, setCoverPreview] = useState(null);
     const [logoFile, setLogoFile] = useState(null);
     const [coverFile, setCoverFile] = useState(null);
 
-    const [formData, setFormData] = useState({
-        name_fr: '',
-        name_ar: '',
-        name_en: '',
-        description_fr: '',
-        description_ar: '',
-        description_en: '',
-        storePhone: '',
-        address: '',
-        responsibleCin: '',
-        matriculeFiscale: '',
-        rib: '',
-        promo: '0',
-        governorate: ''
-    });
-
+    const [formData, setFormData] = useState(initialStoreForm);
     const storeId = user?.store?.id;
-
-    // Check if profile is incomplete
-    const isProfileIncomplete = !user?.store?.name_en || !user?.store?.name_fr || !user?.store?.name_ar || !user?.store?.matriculeFiscale || !user?.store?.storePhone;
+    const isProfileIncomplete = Boolean(user?.store) && (!user?.store?.name_en || !user?.store?.name_fr || !user?.store?.name_ar || !user?.store?.matriculeFiscale || !user?.store?.storePhone);
 
     useEffect(() => {
+        if (!user) return;
+
+        setAccountForm({
+            name: user.name || '',
+            family_name: user.family_name || '',
+            email: user.email || '',
+            password: '',
+            password_confirmation: '',
+        });
+
         if (storeId) {
             fetchStoreData();
         }
-    }, [storeId]);
+    }, [user, storeId]);
 
     const fetchStoreData = async () => {
         try {
             setLoading(true);
-            const response = await api.get(`/store/profile`);
+            const response = await api.get('/store/profile');
             const storeData = response.data?.data || response.data;
-            
+
             if (storeData) {
                 setFormData({
                     name_fr: storeData.name_fr || '',
@@ -73,8 +104,7 @@ const StoreProfile = () => {
                     responsibleCin: storeData.responsibleCin || '',
                     matriculeFiscale: storeData.matriculeFiscale || '',
                     rib: storeData.rib || '',
-                    promo: storeData.promo || '0',
-                    governorate: storeData.governorate || ''
+                    promo: String(storeData.promo ?? '0'),
                 });
 
                 if (storeData.logo) {
@@ -85,19 +115,23 @@ const StoreProfile = () => {
                 }
             }
         } catch (error) {
-            console.error('Error fetching store data:', error);
-            addNotification('error', t('store.profile.messages.fetchError') || 'Failed to load store data');
+            if (error.response?.status !== 404) {
+                console.error('Error fetching store data:', error);
+                addNotification('error', t('store.profile.messages.fetchError') || 'Failed to load store data');
+            }
         } finally {
             setLoading(false);
         }
     };
 
+    const handleAccountChange = (e) => {
+        const { name, value } = e.target;
+        setAccountForm(prev => ({ ...prev, [name]: value }));
+    };
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleLogoChange = (e) => {
@@ -111,8 +145,7 @@ const StoreProfile = () => {
         }
 
         setLogoFile(file);
-        const preview = URL.createObjectURL(file);
-        setLogoPreview(preview);
+        setLogoPreview(URL.createObjectURL(file));
     };
 
     const handleCoverChange = (e) => {
@@ -126,96 +159,164 @@ const StoreProfile = () => {
         }
 
         setCoverFile(file);
-        const preview = URL.createObjectURL(file);
-        setCoverPreview(preview);
+        setCoverPreview(URL.createObjectURL(file));
     };
 
-    const handleAutoTranslate = async () => {
-        setTranslating(true);
+    const saveAccountInfo = async () => {
         try {
-            const fieldsToTranslate = {
-                name_fr: formData.name_fr,
-                name_ar: formData.name_ar,
-                name_en: formData.name_en,
-                description_fr: formData.description_fr,
-                description_ar: formData.description_ar,
-                description_en: formData.description_en,
+            setAccountSaving(true);
+            const payload = {
+                name: accountForm.name,
+                family_name: accountForm.family_name,
+                email: accountForm.email,
             };
-            
-            const response = await api.post('/translate/autofill', { fields: fieldsToTranslate });
-            if (response.data?.success) {
-                setFormData(prev => ({
-                    ...prev,
-                    ...response.data.data
-                }));
-                addNotification('success', t('store.profile.messages.translationSuccess') || 'Translations filled successfully');
+
+            if (accountForm.password) {
+                payload.password = accountForm.password;
+                payload.password_confirmation = accountForm.password_confirmation;
             }
+
+            const response = await api.put('/profile', payload);
+            const updatedUser = response.data?.user || response.data;
+
+            if (updatedUser) {
+                setUser(prev => ({ ...prev, ...updatedUser }));
+            }
+
+            setAccountForm(prev => ({ ...prev, password: '', password_confirmation: '' }));
+            addNotification('success', 'Account updated successfully');
         } catch (error) {
-            console.error('Translation error:', error);
-            addNotification('error', t('store.profile.messages.translationError') || 'Failed to auto-translate. Please check API key and try again.');
+            const message = error.response?.data?.message || 'Failed to update account information';
+            addNotification('error', message);
         } finally {
-            setTranslating(false);
+            setAccountSaving(false);
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        const data = new FormData();
-        Object.keys(formData).forEach(key => {
-            data.append(key, formData[key]);
-        });
-
-        if (logoFile) {
-            data.append('logo', logoFile);
-        }
-
-        if (coverFile) {
-            data.append('cover', coverFile);
+    const saveImagesOnly = async () => {
+        if (!logoFile && !coverFile) {
+            addNotification('info', 'Please choose a logo or cover image first.');
+            return;
         }
 
         try {
-            setSaving(true);
-            // Remove Content-Type to let browser set multipart/form-data with boundary
-            delete api.defaults.headers['Content-Type'];
-            const response = await api.post(`/store/profile`, data);
-            
-            if (response.data?.data) {
+            setImageSaving(true);
+            const payload = new FormData();
+            if (logoFile) payload.append('logo', logoFile);
+            if (coverFile) payload.append('cover', coverFile);
+
+            const response = await api.post('/store/profile', payload);
+            const store = response.data?.data || response.data;
+
+            if (store) {
                 setUser(prev => ({
                     ...prev,
                     store: {
-                        ...prev?.store,
-                        ...response.data.data
-                    }
+                        ...(prev?.store || {}),
+                        ...store,
+                    },
                 }));
             }
 
             setLogoFile(null);
             setCoverFile(null);
-            addNotification('success', t('store.profile.messages.updateSuccess') || 'Store profile updated successfully');
+            addNotification('success', 'Images saved successfully');
         } catch (error) {
-            console.error('Error updating store:', error);
-            if (error.response?.status === 422) {
-                const errors = error.response.data.errors;
-                const messages = Object.values(errors).flat().join('\n');
-                addNotification('error', `${t('store.profile.messages.validationError') || 'Validation Error'}:\n${messages}`);
-            } else {
-                addNotification('error', t('store.profile.messages.updateError') || 'Failed to update store profile');
-            }
+            console.error('Image save error:', error);
+            addNotification('error', 'Failed to save images');
         } finally {
-            setSaving(false);
-            // Always restore default Content-Type
-            api.defaults.headers['Content-Type'] = 'application/json';
+            setImageSaving(false);
         }
     };
 
-    if (!storeId) {
-        return (
-            <div className="p-6 text-center">
-                <p className="text-muted-foreground">{t('store.profile.messages.noStore') || 'No store associated with this account.'}</p>
-            </div>
-        );
-    }
+    const handleAutoTranslate = async () => {
+        const fieldsToTranslate = {};
+        Object.entries(formData).forEach(([key, value]) => {
+            if ((key.startsWith('name_') || key.startsWith('description_')) && value && String(value).trim() !== '') {
+                fieldsToTranslate[key] = value;
+            }
+        });
+
+        if (Object.keys(fieldsToTranslate).length === 0) {
+            addNotification('error', 'Write at least one name or description before enhancing.');
+            return;
+        }
+
+        try {
+            setTranslating(true);
+            console.log('AI enhancement payload:', fieldsToTranslate);
+            const response = await api.post('/translate/autofill', { fields: fieldsToTranslate });
+            console.log('AI enhancement response:', response?.data);
+
+            if (response.data?.success) {
+                const translatedFields = Object.fromEntries(
+                    Object.entries(response.data.data || {})
+                        .map(([key, value]) => {
+                            const normalizedKey = key === 'name_es' ? 'name_ar' : key === 'description_es' ? 'description_ar' : key;
+                            return [normalizedKey, value];
+                        })
+                        .filter(([key, value]) => (
+                            (key === 'name_en' || key === 'name_fr' || key === 'name_ar' || key === 'description_en' || key === 'description_fr' || key === 'description_ar')
+                            && typeof value === 'string'
+                        ))
+                );
+
+                setFormData(prev => ({
+                    ...prev,
+                    ...translatedFields,
+                }));
+                addNotification('success', 'AI enhancement is ready.');
+            } else {
+                console.error('AI enhancement API returned unsuccessful response:', response?.data);
+                addNotification('error', response?.data?.error || 'AI enhancement failed. Please try again.');
+            }
+        } catch (error) {
+            console.error('Translation error full object:', error);
+            console.error('Translation error response data:', error.response?.data);
+            console.error('Translation error status:', error.response?.status);
+            addNotification('error', error.response?.data?.error || error.response?.data?.message || 'AI enhancement failed. Please try again.');
+        } finally {
+            setTranslating(false);
+        }
+    };
+
+    const saveStoreDetails = async () => {
+        try {
+            setStoreSaving(true);
+            const payload = new FormData();
+            Object.entries(formData).forEach(([key, value]) => {
+                if (value !== null && value !== undefined) {
+                    payload.append(key, String(value));
+                }
+            });
+
+            const response = await api.post('/store/profile', payload);
+            const store = response.data?.data || response.data;
+
+            if (store) {
+                setUser(prev => ({
+                    ...prev,
+                    store: {
+                        ...(prev?.store || {}),
+                        ...store,
+                    },
+                }));
+            }
+
+            addNotification('success', 'Store information saved successfully');
+        } catch (error) {
+            console.error('Error updating store info:', error);
+            if (error.response?.status === 422) {
+                const errors = error.response.data.errors;
+                const messages = Object.values(errors).flat().join('\n');
+                addNotification('error', `Validation error:\n${messages}`);
+            } else {
+                addNotification('error', 'Failed to save store information');
+            }
+        } finally {
+            setStoreSaving(false);
+        }
+    };
 
     return (
         <AdminPageLayout
@@ -223,310 +324,196 @@ const StoreProfile = () => {
             subtitle={t('store.profile.subtitle') || 'Update your store information'}
             icon={Building2}
         >
-            <div className="max-w-4xl mx-auto space-y-6 text-start">
-                {/* Incomplete Profile Banner */}
+            <div className="w-full max-w-none mx-auto space-y-7 px-2 md:px-4 text-start">
                 {isProfileIncomplete && (
-                    <div
-                        className="p-4 bg-yellow-50/50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800/50 rounded-2xl flex items-start gap-3"
-                    >
-                            <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-500 mt-0.5 shrink-0" />
-                            <div>
-                                <p className="font-bold text-yellow-900 dark:text-yellow-200 text-sm">
-                                    {t('store.profile.messages.incompleteProfile') || 'Complete Your Store Profile'}
-                                </p>
-                                <p className="text-yellow-800 dark:text-yellow-300 text-xs mt-1">
-                                    {t('store.profile.messages.completeToAccess') || 'Please complete all required fields to access the full dashboard.'}
-                                </p>
-                            </div>
+                    <div className="flex items-start gap-3 rounded-2xl border border-yellow-200 bg-yellow-50/70 p-4 dark:border-yellow-800/60 dark:bg-yellow-950/20">
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-yellow-600 dark:text-yellow-500" />
+                        <div>
+                            <p className="text-sm font-bold text-yellow-900 dark:text-yellow-200">Complete your store profile</p>
+                            <p className="mt-1 text-xs text-yellow-800 dark:text-yellow-300">Fill in the required store data to unlock your dashboard.</p>
+                        </div>
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit}>
-                    {/* Cover Header with Logo */}
-                    <div className="relative mb-8 rounded-2xl ">
-                        {/* Cover Image */}
-                        <div className="relative h-48 bg-linear-to-br from-primary/20 to-secondary/20 rounded-2xl overflow-hidden">
-                            {coverPreview ? (
-                                <img src={coverPreview} alt="Store cover" className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gradient-to from-primary/30 to-secondary/20">
-                                    <ImagePlus size={48} className="text-muted-foreground/40" />
-                                </div>
-                            )}
-                            
-                            {/* Cover Upload Overlay */}
-                            <label className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors cursor-pointer flex items-center justify-center group">
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-center">
-                                    <Upload size={24} className="mx-auto mb-1" />
-                                    <span className="text-xs font-medium">{t('store.profile.form.uploadCover') || 'Change Cover'}</span>
-                                </div>
-                                <input
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
-                                    onChange={handleCoverChange}
-                                    className="absolute inset-0 opacity-0 cursor-pointer"
-                                />
-                            </label>
-                        </div>
+                <div className="space-y-6">
+                    <CardBox className="w-full rounded-[30px] border border-border/60 bg-card/80 p-4 md:p-6">
+                        <div className="flex flex-col gap-5 lg:flex-row lg:items-end">
+                            <div className="relative w-full lg:w-[220px]">
+                                <div className="relative h-44 w-full overflow-hidden rounded-[28px] border border-border/70 bg-gradient-to-br from-primary/20 via-secondary/10 to-background">
+                                    {coverPreview ? (
+                                        <img src={coverPreview} alt="store cover" className="h-full w-full object-cover" />
+                                    ) : (
+                                        <div className="flex h-full w-full items-center justify-center text-muted-foreground/50">
+                                            <ImagePlus className="h-12 w-12" />
+                                        </div>
+                                    )}
 
-                        {/* Logo Overlay */}
-                        <div className="absolute -bottom-12 left-8 w-28 h-28">
-                            <div className="w-full h-full bg-card border-4 border-border rounded-2xl overflow-hidden shadow-lg">
-                                {logoPreview ? (
-                                    <img src={logoPreview} alt="Store logo" className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-muted/40">
-                                        <Upload size={32} className="text-muted-foreground/40" />
+                                    <label className="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/0 transition-colors hover:bg-black/15 group">
+                                        <div className="flex flex-col items-center gap-1 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                            <Upload className="h-5 w-5" />
+                                            <span className="text-xs font-semibold">Cover</span>
+                                        </div>
+                                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0" onChange={handleCoverChange} />
+                                    </label>
+                                </div>
+
+                                <div className="absolute -bottom-10 left-5 h-24 w-24 overflow-hidden rounded-[26px] border-4 border-card bg-background shadow-xl">
+                                    {logoPreview ? (
+                                        <img src={logoPreview} alt="store logo" className="h-full w-full object-cover" />
+                                    ) : (
+                                        <div className="flex h-full w-full items-center justify-center bg-muted/70 text-muted-foreground">
+                                            <Upload className="h-6 w-6" />
+                                        </div>
+                                    )}
+                                    <label className="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/0 transition-colors hover:bg-black/15 group">
+                                        <div className="flex h-full w-full items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+                                            <ImagePlus className="h-5 w-5 text-white" />
+                                        </div>
+                                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0" onChange={handleLogoChange} />
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 pt-12 lg:pt-0">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Store identity</p>
+                                        <h2 className="mt-2 text-3xl font-black tracking-tight text-foreground">{formData.name_en || user?.name || 'Your Store'}</h2>
                                     </div>
-                                )}
-                                
-                                {/* Logo Upload Overlay */}
-                                <label className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors cursor-pointer flex items-center justify-center group">
-                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-center">
-                                        <ImagePlus size={16} />
-                                    </div>
-                                    <input
-                                        type="file"
-                                        accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
-                                        onChange={handleLogoChange}
-                                        className="absolute inset-0 opacity-0 cursor-pointer"
-                                    />
-                                </label>
+                                    <Button type="button" onClick={saveImagesOnly} disabled={imageSaving || (!logoFile && !coverFile)} className="h-12 rounded-2xl px-5 font-bold shadow-sm">
+                                        {imageSaving ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                        Save images
+                                    </Button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </CardBox>
 
-                    {/* Form Data Section - starts below logo */}
-                    <div className="pt-16 space-y-6">
-                        {/* Store Information */}
-                        <CardBox className="p-8">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-lg font-semibold text-foreground m-0">
-                                    {t('store.profile.sections.storeInfo') || 'Store Information'}
-                                </h3>
-                                <Button
-                                    type="button"
-                                    onClick={handleAutoTranslate}
-                                    disabled={translating}
-                                    className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 border border-purple-200 dark:border-purple-500/30 gap-2 rounded-xl h-9 px-3 font-bold transition-all shadow-sm text-xs"
-                                >
-                                    {translating ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
-                                    {t('store.profile.form.autoTranslate') || '✨ Auto Translate'}
+                    <CardBox className="w-full rounded-[30px] border border-border/60 bg-card/80 p-4 md:p-6">
+                        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Account</p>
+                                <h3 className="mt-2 text-xl font-black text-foreground">Profile details</h3>
+                            </div>
+                            <Button type="button" onClick={saveAccountInfo} disabled={accountSaving} className="h-11 rounded-2xl px-5 font-bold">
+                                {accountSaving ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                Save account
+                            </Button>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                            <div className="space-y-2">
+                                <Label htmlFor="account-name">First name</Label>
+                                <Input id="account-name" name="name" value={accountForm.name} onChange={handleAccountChange} className="h-12 rounded-2xl text-base" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="account-family_name">Last name</Label>
+                                <Input id="account-family_name" name="family_name" value={accountForm.family_name} onChange={handleAccountChange} className="h-12 rounded-2xl text-base" />
+                            </div>
+                            <div className="space-y-2 md:col-span-2 xl:col-span-1">
+                                <Label htmlFor="account-email">Email</Label>
+                                <Input id="account-email" type="email" name="email" value={accountForm.email} onChange={handleAccountChange} className="h-12 rounded-2xl text-base" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="account-password">Password</Label>
+                                <Input id="account-password" type="password" name="password" value={accountForm.password} onChange={handleAccountChange} className="h-12 rounded-2xl text-base" placeholder="New password" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="account-password_confirmation">Confirm password</Label>
+                                <Input id="account-password_confirmation" type="password" name="password_confirmation" value={accountForm.password_confirmation} onChange={handleAccountChange} className="h-12 rounded-2xl text-base" placeholder="Repeat password" />
+                            </div>
+                        </div>
+                    </CardBox>
+
+                    <CardBox className="w-full rounded-[30px] border border-border/60 bg-card/80 p-4 md:p-6">
+                        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Store content</p>
+                                <h3 className="mt-2 text-xl font-black text-foreground">Brand information</h3>
+                            </div>
+                            <Button type="button" onClick={handleAutoTranslate} disabled={translating} className="h-11 rounded-2xl border border-purple-300 bg-purple-500/10 px-5 font-bold text-purple-600 hover:bg-purple-500/20 dark:border-purple-500/30 dark:text-purple-300">
+                                {translating ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                                AI enhance & translate
+                            </Button>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name_en">Store name (English)</Label>
+                                    <Input id="name_en" name="name_en" value={formData.name_en} onChange={handleInputChange} className="h-12 rounded-2xl text-base" placeholder="Store name in English" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="name_fr">Store name (French)</Label>
+                                    <Input id="name_fr" name="name_fr" value={formData.name_fr} onChange={handleInputChange} className="h-12 rounded-2xl text-base" placeholder="Nom du magasin en français" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="name_ar">Store name (Arabic)</Label>
+                                    <Input id="name_ar" name="name_ar" value={formData.name_ar} onChange={handleInputChange} className="h-12 rounded-2xl text-base" dir="rtl" placeholder="اسم المتجر بالعربية" />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                                <div className="space-y-2">
+                                    <Label htmlFor="description_en">Description (English)</Label>
+                                    <Textarea id="description_en" name="description_en" value={formData.description_en} onChange={handleInputChange} rows={6} className="min-h-[150px] rounded-2xl text-base" placeholder="Write your store description here and click AI enhance" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="description_fr">Description (French)</Label>
+                                    <Textarea id="description_fr" name="description_fr" value={formData.description_fr} onChange={handleInputChange} rows={6} className="min-h-[150px] rounded-2xl text-base" placeholder="Décrivez votre boutique en français" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="description_ar">Description (Arabic)</Label>
+                                    <Textarea id="description_ar" name="description_ar" value={formData.description_ar} onChange={handleInputChange} rows={6} className="min-h-[150px] rounded-2xl text-base" dir="rtl" placeholder="اكتب وصف المتجر بالعربية" />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end">
+                                <Button type="button" onClick={saveStoreDetails} disabled={storeSaving} className="h-12 rounded-2xl px-5 font-bold">
+                                    {storeSaving ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                    Save store details
                                 </Button>
                             </div>
+                        </div>
+                    </CardBox>
 
-                            <div className="space-y-6">
-                                {/* Store Names */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="name_en">{t('store.profile.form.nameEn') || 'Store Name (English)'}</Label>
-                                        <Input
-                                            id="name_en"
-                                            name="name_en"
-                                            value={formData.name_en}
-                                            onChange={handleInputChange}
-                                            placeholder="Store name in English"
-                                            className="bg-muted/30 border-border/60 rounded-2xl h-11"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="name_fr">{t('store.profile.form.nameFr') || 'Store Name (French)'}</Label>
-                                        <Input
-                                            id="name_fr"
-                                            name="name_fr"
-                                            value={formData.name_fr}
-                                            onChange={handleInputChange}
-                                            placeholder="Store name in French"
-                                            className="bg-muted/30 border-border/60 rounded-2xl h-11"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="name_ar">{t('store.profile.form.nameAr') || 'Store Name (Arabic)'}</Label>
-                                        <Input
-                                            id="name_ar"
-                                            name="name_ar"
-                                            value={formData.name_ar}
-                                            onChange={handleInputChange}
-                                            placeholder="اسم المتجر بالعربية"
-                                            className="bg-muted/30 border-border/60 rounded-2xl h-11"
-                                            dir="rtl"
-                                        />
-                                    </div>
-                                </div>
+                    <CardBox className="w-full rounded-[30px] border border-border/60 bg-card/80 p-4 md:p-6">
+                        <div className="mb-5">
+                            <p className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Contact</p>
+                            <h3 className="mt-2 text-xl font-black text-foreground">Store contact information</h3>
+                        </div>
 
-                                {/* Store Descriptions */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="description_en">{t('store.profile.form.descriptionEn') || 'Description (English)'}</Label>
-                                        <Textarea
-                                            id="description_en"
-                                            name="description_en"
-                                            value={formData.description_en}
-                                            onChange={handleInputChange}
-                                            placeholder="Store description in English"
-                                            rows={3}
-                                            className="bg-muted/30 border-border/60 rounded-2xl resize-none"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="description_fr">{t('store.profile.form.descriptionFr') || 'Description (French)'}</Label>
-                                        <Textarea
-                                            id="description_fr"
-                                            name="description_fr"
-                                            value={formData.description_fr}
-                                            onChange={handleInputChange}
-                                            placeholder="Store description in French"
-                                            rows={3}
-                                            className="bg-muted/30 border-border/60 rounded-2xl resize-none"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="description_ar">{t('store.profile.form.descriptionAr') || 'Description (Arabic)'}</Label>
-                                        <Textarea
-                                            id="description_ar"
-                                            name="description_ar"
-                                            value={formData.description_ar}
-                                            onChange={handleInputChange}
-                                            placeholder="وصف المتجر بالعربية"
-                                            rows={3}
-                                            className="bg-muted/30 border-border/60 rounded-2xl resize-none"
-                                            dir="rtl"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Contact Information */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="storePhone">{t('store.profile.form.phone') || 'Store Phone'}</Label>
-                                        <Input
-                                            id="storePhone"
-                                            name="storePhone"
-                                            type="tel"
-                                            value={formData.storePhone}
-                                            onChange={handleInputChange}
-                                            placeholder="+1 234 567 8900"
-                                            className="bg-muted/30 border-border/60 rounded-2xl h-11"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="address">{t('store.profile.form.address') || 'Address'}</Label>
-                                        <Input
-                                            id="address"
-                                            name="address"
-                                            value={formData.address}
-                                            onChange={handleInputChange}
-                                            placeholder="Street address"
-                                            className="bg-muted/30 border-border/60 rounded-2xl h-11"
-                                        />
-                                    </div>
-                                </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                            <div className="space-y-2">
+                                <Label htmlFor="storePhone">Phone</Label>
+                                <Input id="storePhone" name="storePhone" value={formData.storePhone} onChange={handleInputChange} className="h-12 rounded-2xl text-base" />
                             </div>
-                        </CardBox>
-
-                        {/* Business Information */}
-                        <CardBox className="p-8">
-                            <h3 className="text-lg font-semibold mb-6 text-foreground">
-                                {t('store.profile.sections.businessInfo') || 'Business Information'}
-                            </h3>
-
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="responsibleCin">{t('store.profile.form.cin') || 'Responsible CIN'}</Label>
-                                        <Input
-                                            id="responsibleCin"
-                                            name="responsibleCin"
-                                            value={formData.responsibleCin}
-                                            onChange={handleInputChange}
-                                            placeholder="CIN number"
-                                            className="bg-muted/30 border-border/60 rounded-2xl h-11"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="matriculeFiscale">{t('store.profile.form.matriculeFiscale') || 'Matricule Fiscale'}</Label>
-                                        <Input
-                                            id="matriculeFiscale"
-                                            name="matriculeFiscale"
-                                            value={formData.matriculeFiscale}
-                                            onChange={handleInputChange}
-                                            placeholder="Tax ID"
-                                            className="bg-muted/30 border-border/60 rounded-2xl h-11"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="rib">{t('store.profile.form.rib') || 'RIB'}</Label>
-                                        <Input
-                                            id="rib"
-                                            name="rib"
-                                            value={formData.rib}
-                                            onChange={handleInputChange}
-                                            placeholder="Bank account RIB"
-                                            className="bg-muted/30 border-border/60 rounded-2xl h-11"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="promo">{t('store.profile.form.promo') || 'Promotion (%)'}</Label>
-                                        <Input
-                                            id="promo"
-                                            name="promo"
-                                            type="number"
-                                            min="0"
-                                            max="100"
-                                            value={formData.promo}
-                                            onChange={handleInputChange}
-                                            placeholder="0"
-                                            className="bg-muted/30 border-border/60 rounded-2xl h-11"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="governorate">{t('store.profile.form.governorate') || 'Governorate'}</Label>
-                                    <GovernorateSelect
-                                        value={formData.governorate}
-                                        onChange={(value) => setFormData(prev => ({ ...prev, governorate: value }))}
-                                    />
-                                </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="address">Address</Label>
+                                <Input id="address" name="address" value={formData.address} onChange={handleInputChange} className="h-12 rounded-2xl text-base" />
                             </div>
-                        </CardBox>
+                            <div className="space-y-2">
+                                <Label htmlFor="responsibleCin">Responsible CIN</Label>
+                                <Input id="responsibleCin" name="responsibleCin" value={formData.responsibleCin} onChange={handleInputChange} className="h-12 rounded-2xl text-base" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="matriculeFiscale">Tax number</Label>
+                                <Input id="matriculeFiscale" name="matriculeFiscale" value={formData.matriculeFiscale} onChange={handleInputChange} className="h-12 rounded-2xl text-base" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="rib">RIB</Label>
+                                <Input id="rib" name="rib" value={formData.rib} onChange={handleInputChange} className="h-12 rounded-2xl text-base" />
+                            </div>
+                        </div>
 
-                        {/* Submit Button */}
-                        <div className="flex justify-end gap-3">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="lg"
-                                onClick={() => fetchStoreData()}
-                                disabled={saving}
-                                className="rounded-xl"
-                            >
-                                {t('store.profile.form.cancel') || 'Cancel'}
-                            </Button>
-                            <Button
-                                type="submit"
-                                size="lg"
-                                disabled={saving}
-                                className="rounded-xl bg-primary hover:bg-primary/90 gap-2"
-                            >
-                                {saving ? (
-                                    <>
-                                        <Loader size={18} className="animate-spin" />
-                                        {t('store.profile.form.saving') || 'Saving...'}
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckCircle2 size={18} />
-                                        {t('store.profile.form.save') || 'Save Changes'}
-                                    </>
-                                )}
+                        <div className="mt-6 flex justify-end">
+                            <Button type="button" onClick={saveStoreDetails} disabled={storeSaving} className="h-12 rounded-2xl px-5 font-bold">
+                                {storeSaving ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                Save store details
                             </Button>
                         </div>
-                    </div>
-                </form>
+                    </CardBox>
+                </div>
             </div>
         </AdminPageLayout>
     );

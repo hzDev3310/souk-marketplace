@@ -9,9 +9,9 @@
     <!-- Header Stats -->
     <div class="grid grid-cols-3 gap-4 mb-10">
         @php
-            $newCount = $orders->whereIn('status', ['PENDING', 'CONFIRMED'])->count();
-            $progressCount = $orders->where('status', 'SHIPPED')->count();
-            $completedCount = $orders->where('status', 'DELIVERED')->count();
+            $newCount = $orders->whereIn('status', ['en_attente', 'confirme'])->count();
+            $progressCount = $orders->whereIn('status', ['imported_to_depot', 'en_livraison'])->count();
+            $completedCount = $orders->whereIn('status', ['livree', 'retournee'])->count();
         @endphp
         
         <div class="bg-card rounded-[32px] p-6 text-center border border-border/40 premium-shadow">
@@ -36,6 +36,18 @@
 
     <div class="space-y-6">
         @forelse($orders as $order)
+        @php
+            $status = strtolower((string) $order->status);
+            $statusMap = [
+                'en_attente' => ['label' => 'En attente', 'tone' => 'bg-amber-500/10 border-amber-500/20 text-amber-600', 'progress' => 25],
+                'confirme' => ['label' => 'Confirmé', 'tone' => 'bg-blue-500/10 border-blue-500/20 text-blue-600', 'progress' => 50],
+                'imported_to_depot' => ['label' => 'Importé au dépôt', 'tone' => 'bg-indigo-500/10 border-indigo-500/20 text-indigo-600', 'progress' => 66],
+                'en_livraison' => ['label' => 'En livraison', 'tone' => 'bg-purple-500/10 border-purple-500/20 text-purple-600', 'progress' => 80],
+                'livree' => ['label' => 'Livrée', 'tone' => 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600', 'progress' => 100],
+                'retournee' => ['label' => 'Retournée', 'tone' => 'bg-rose-500/10 border-rose-500/20 text-rose-600', 'progress' => 100],
+            ];
+            $currentStatus = $statusMap[$status] ?? ['label' => strtoupper($order->status), 'tone' => 'bg-muted/20 border-border/20 text-foreground', 'progress' => 0];
+        @endphp
         <div class="bg-card border border-border/40 rounded-[40px] p-8 premium-shadow relative overflow-hidden group">
             <!-- Card Header -->
             <div class="flex justify-between items-start mb-8">
@@ -49,54 +61,50 @@
                         @endif
                     </h3>
                 </div>
-                <div class="px-4 py-2 {{ $order->status === 'CANCELLED' ? 'bg-rose-500/10 border-rose-500/20' : 'bg-emerald-500/10 border-emerald-500/20' }} border rounded-full">
-                    <span class="text-[10px] font-black uppercase tracking-widest {{ $order->status === 'CANCELLED' ? 'text-rose-500' : 'text-emerald-600' }}">
-                        {{ $order->status }}
+                <div class="px-4 py-2 border rounded-full {{ $currentStatus['tone'] }}">
+                    <span class="text-[10px] font-black uppercase tracking-widest">
+                        {{ $currentStatus['label'] }}
                     </span>
                 </div>
             </div>
 
             <!-- Tracking Timeline -->
-            <div class="relative pl-14 space-y-10 mb-10 {{ $order->status === 'CANCELLED' ? 'opacity-40 grayscale' : '' }}">
+            <div class="relative pl-14 space-y-10 mb-10 {{ in_array($status, ['retournee']) ? 'opacity-40 grayscale' : '' }}">
                 <!-- Vertical Line -->
                 <div class="absolute left-6 top-2 bottom-2 w-1.5 bg-muted rounded-full overflow-hidden">
-                    <div class="w-full bg-[#065F46] rounded-full transition-all duration-1000" style="height: {{ 
-                        $order->status === 'DELIVERED' ? '100' : 
-                        ($order->status === 'SHIPPED' ? '66' : 
-                        (in_array($order->status, ['PENDING', 'CONFIRMED']) ? '33' : '0')) 
-                    }}%"></div>
+                    <div class="w-full bg-[#065F46] rounded-full transition-all duration-1000" style="height: {{ $currentStatus['progress'] }}%"></div>
                 </div>
 
                 <!-- Step 1 -->
                 <div class="relative">
-                    <div class="absolute -left-12 w-8 h-8 rounded-xl flex items-center justify-center {{ in_array($order->status, ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED']) ? 'bg-[#065F46] text-white' : 'bg-muted text-muted-foreground' }} z-10 shadow-lg">
+                    <div class="absolute -left-12 w-8 h-8 rounded-xl flex items-center justify-center {{ in_array($status, ['en_attente', 'confirme', 'imported_to_depot', 'en_livraison', 'livree']) ? 'bg-[#065F46] text-white' : 'bg-muted text-muted-foreground' }} z-10 shadow-lg">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
                     </div>
                     <div>
-                        <h4 class="font-black text-sm {{ in_array($order->status, ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED']) ? 'text-foreground' : 'text-muted-foreground' }}">Packing & Quality Check</h4>
-                        <p class="text-[10px] font-bold text-muted-foreground">Order Accepted • {{ $order->updated_at->format('H:i A') }}</p>
+                        <h4 class="font-black text-sm {{ in_array($status, ['en_attente', 'confirme', 'imported_to_depot', 'en_livraison', 'livree']) ? 'text-foreground' : 'text-muted-foreground' }}">En attente</h4>
+                        <p class="text-[10px] font-bold text-muted-foreground">Commande enregistrée • {{ $order->updated_at->format('H:i A') }}</p>
                     </div>
                 </div>
 
                 <!-- Step 2 -->
                 <div class="relative">
-                    <div class="absolute -left-12 w-8 h-8 rounded-xl flex items-center justify-center {{ in_array($order->status, ['SHIPPED', 'DELIVERED']) ? 'bg-[#065F46] text-white' : 'bg-muted text-muted-foreground' }} z-10 shadow-lg">
+                    <div class="absolute -left-12 w-8 h-8 rounded-xl flex items-center justify-center {{ in_array($status, ['confirme', 'imported_to_depot', 'en_livraison', 'livree']) ? 'bg-[#065F46] text-white' : 'bg-muted text-muted-foreground' }} z-10 shadow-lg">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V2H10z"/><path d="M10 7V5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"/><path d="M8 7h8"/><rect width="16" height="12" x="4" y="7" rx="2"/><path d="M12 12v3"/><path d="M16 11l-1 2"/><path d="M8 11l1 2"/></svg>
                     </div>
                     <div>
-                        <h4 class="font-black text-sm {{ in_array($order->status, ['SHIPPED', 'DELIVERED']) ? 'text-foreground' : 'text-muted-foreground' }}">Transit Hub Arrival</h4>
-                        <p class="text-[10px] font-bold text-muted-foreground">{{ $order->status === 'SHIPPED' ? 'Expected: Tomorrow' : ($order->status === 'DELIVERED' ? 'Arrived and Processed' : 'Waiting for dispatch') }}</p>
+                        <h4 class="font-black text-sm {{ in_array($status, ['confirme', 'imported_to_depot', 'en_livraison', 'livree']) ? 'text-foreground' : 'text-muted-foreground' }}">Dépôt / préparation</h4>
+                        <p class="text-[10px] font-bold text-muted-foreground">{{ in_array($status, ['imported_to_depot', 'en_livraison', 'livree']) ? 'Produit reçu au dépôt' : 'En attente de préparation' }}</p>
                     </div>
                 </div>
 
                 <!-- Step 3 -->
                 <div class="relative">
-                    <div class="absolute -left-12 w-8 h-8 rounded-xl flex items-center justify-center {{ $order->status === 'DELIVERED' ? 'bg-[#065F46] text-white' : 'bg-muted text-muted-foreground' }} z-10 shadow-lg">
+                    <div class="absolute -left-12 w-8 h-8 rounded-xl flex items-center justify-center {{ in_array($status, ['en_livraison', 'livree']) ? 'bg-[#065F46] text-white' : 'bg-muted text-muted-foreground' }} z-10 shadow-lg">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
                     </div>
                     <div>
-                        <h4 class="font-black text-sm {{ $order->status === 'DELIVERED' ? 'text-foreground' : 'text-muted-foreground' }}">Final Delivery</h4>
-                        <p class="text-[10px] font-bold text-muted-foreground">{{ $order->status === 'DELIVERED' ? 'Delivered successfully' : 'Route optimization in progress' }}</p>
+                        <h4 class="font-black text-sm {{ in_array($status, ['en_livraison', 'livree']) ? 'text-foreground' : 'text-muted-foreground' }}">Livraison</h4>
+                        <p class="text-[10px] font-bold text-muted-foreground">{{ $status === 'livree' ? 'Commande livrée' : ($status === 'en_livraison' ? 'En cours de livraison' : 'En attente d’expédition') }}</p>
                     </div>
                 </div>
             </div>

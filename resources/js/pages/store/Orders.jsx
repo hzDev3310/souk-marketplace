@@ -118,20 +118,29 @@ const StoreOrders = () => {
     };
 
     const getStatusConfig = (status) => {
-        switch (status?.toLowerCase()) {
-            case "en_cours":
+        switch (String(status || '').toLowerCase()) {
+            case "en_attente":
             case "pending":
-                return { label: "Pending", color: "text-amber-500", bg: "bg-amber-500/10", icon: Clock };
+                return { label: "En attente", color: "text-amber-500", bg: "bg-amber-500/10", icon: Clock };
             case "confirme":
             case "confirmed":
-                return { label: "Confirmed", color: "text-emerald-500", bg: "bg-emerald-500/10", icon: CheckCircle2 };
+                return { label: "Confirmé", color: "text-emerald-500", bg: "bg-emerald-500/10", icon: CheckCircle2 };
+            case "imported_to_depot":
+            case "imported":
+            case "imported_from_store":
+                return { label: "Importé au dépôt", color: "text-indigo-500", bg: "bg-indigo-500/10", icon: Package };
+            case "en_livraison":
+            case "in_shipping":
+                return { label: "En livraison", color: "text-blue-500", bg: "bg-blue-500/10", icon: Package };
+            case "livree":
+            case "shipped":
+            case "delivered":
+                return { label: "Livrée", color: "text-green-500", bg: "bg-green-500/10", icon: CheckCircle2 };
+            case "retournee":
+            case "returned":
             case "annule":
             case "cancelled":
-                return { label: "Cancelled", color: "text-rose-500", bg: "bg-rose-500/10", icon: XCircle };
-            case "shipped":
-                return { label: "Shipped", color: "text-blue-500", bg: "bg-blue-500/10", icon: Package };
-            case "delivered":
-                return { label: "Delivered", color: "text-green-500", bg: "bg-green-500/10", icon: CheckCircle2 };
+                return { label: "Retournée", color: "text-rose-500", bg: "bg-rose-500/10", icon: XCircle };
             default:
                 return { label: status || "Unknown", color: "text-muted-foreground", bg: "bg-muted/10", icon: AlertCircle };
         }
@@ -498,40 +507,9 @@ const StoreOrders = () => {
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className="py-4 px-6 text-center">
-                                                            <DropdownMenu>
-                                                                <DropdownMenuTrigger asChild>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        className={`h-8 text-[10px] font-black px-3 py-0 rounded-lg ${itemStatus.bg} ${itemStatus.color} hover:opacity-80`}
-                                                                    >
-                                                                        {itemStatus.label} <ChevronDown size={12} className="ml-1" />
-                                                                    </Button>
-                                                                </DropdownMenuTrigger>
-                                                                <DropdownMenuContent align="center" className="rounded-xl border-border/50 shadow-2xl">
-                                                                    <DropdownMenuItem
-                                                                        onClick={() => updateItemStatus(viewingOrder.id, item.id, 'en_cours')}
-                                                                        className="font-black text-[10px] uppercase rounded-lg"
-                                                                    >
-                                                                        <Clock className="w-3 h-3 mr-2 text-amber-500" />
-                                                                        EN COURS
-                                                                    </DropdownMenuItem>
-                                                                    <DropdownMenuItem
-                                                                        onClick={() => updateItemStatus(viewingOrder.id, item.id, 'confirme')}
-                                                                        className="font-black text-[10px] uppercase rounded-lg"
-                                                                    >
-                                                                        <CheckCircle2 className="w-3 h-3 mr-2 text-emerald-500" />
-                                                                        CONFIRMER
-                                                                    </DropdownMenuItem>
-                                                                    <DropdownMenuItem
-                                                                        onClick={() => updateItemStatus(viewingOrder.id, item.id, 'annule')}
-                                                                        className="font-black text-[10px] uppercase rounded-lg text-rose-500"
-                                                                    >
-                                                                        <XCircle className="w-3 h-3 mr-2" />
-                                                                        ANNULER
-                                                                    </DropdownMenuItem>
-                                                                </DropdownMenuContent>
-                                                            </DropdownMenu>
+                                                            <span className={`inline-flex h-8 items-center justify-center px-3 rounded-lg text-[10px] font-black ${itemStatus.bg} ${itemStatus.color}`}>
+                                                                {itemStatus.label}
+                                                            </span>
                                                         </TableCell>
                                                         <TableCell className="py-4 px-6 text-center font-bold text-sm">x{item.quantity}</TableCell>
                                                         <TableCell className="py-4 px-6 text-end">

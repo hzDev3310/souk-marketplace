@@ -35,11 +35,6 @@ class AuthController extends Controller
             'referral_code' => ['required_if:role,INFLUENCER', 'nullable', 'string', 'unique:influencers,referralCode'],
             'phone' => ['required_if:role,INFLUENCER', 'nullable', 'string'],
             'cin' => ['required_if:role,INFLUENCER', 'nullable', 'string'],
-            // Store fields
-            'store_name_fr' => ['required_if:role,STORE', 'nullable', 'string'],
-            'store_name_ar' => ['nullable', 'string'],
-            'store_name_en' => ['nullable', 'string'],
-            'matricule_fiscale' => ['required_if:role,STORE', 'nullable', 'string'],
         ]);
 
         // Create user
@@ -79,17 +74,7 @@ class AuthController extends Controller
                 break;
 
             case 'STORE':
-                Store::create([
-                    'id' => (string) Str::uuid(),
-                    'user_id' => $user->id,
-                    'name_fr' => $validated['store_name_fr'] ?? null,
-                    'name_ar' => $validated['store_name_ar'] ?? null,
-                    'name_en' => $validated['store_name_en'] ?? null,
-                    'matriculeFiscale' => $validated['matricule_fiscale'] ?? null,
-                    'isActive' => false, // Requires admin approval
-                    'slug' => Str::slug($validated['store_name_fr'] ?? $validated['name'] . '-' . Str::random(4)),
-                    'promo' => 0,
-                ]);
+                // The store profile is completed later by the boutique after signup.
                 break;
         }
 
@@ -177,6 +162,39 @@ class AuthController extends Controller
     {
         $user = $request->user()->load(strtolower($request->user()->role));
         return response()->json($user);
+    }
+
+    /**
+     * Update the authenticated user's profile details.
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'family_name' => ['nullable', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user->fill([
+            'name' => $validated['name'],
+            'family_name' => $validated['family_name'] ?? $user->family_name,
+            'email' => $validated['email'],
+        ]);
+
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile updated successfully',
+            'user' => $user->fresh()->load(strtolower($user->role)),
+        ]);
     }
 
     /**

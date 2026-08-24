@@ -42,7 +42,7 @@ class GeminiTranslationService
         $baseUrl = rtrim($this->baseUrl(), '/');
         $model = $this->model();
 
-        $prompt = "You are a professional translator. I will provide a JSON object representing fields in different languages (English, French, Arabic, etc.). Some fields have content and some are empty strings. Your task is to accurately translate the content from the filled fields into the appropriate language for the empty fields. Return ONLY a valid JSON object with the exact same keys as the input, where all missing translations have been filled. Do not include markdown formatting like ```json or any other text.\n\nInput JSON:\n" . json_encode($data, JSON_UNESCAPED_UNICODE);
+        $prompt = "You are a professional translator and copywriter. Detect which fields are already filled and which are empty. If a text is already provided in one language, rewrite and translate it into the missing language fields while keeping the same meaning, natural tone, and marketing quality. If only one language is present, generate natural text for the other languages. Preserve the exact JSON keys from the input. Return ONLY valid JSON, no markdown, no explanations.\n\nInput JSON:\n" . json_encode($data, JSON_UNESCAPED_UNICODE);
 
         try {
             $response = Http::timeout(45)

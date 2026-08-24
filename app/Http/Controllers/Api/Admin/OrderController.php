@@ -41,22 +41,17 @@ class OrderController extends Controller
     public function update(Request $request, $id)
     {
         $order = Order::findOrFail($id);
-        
+
         $validated = $request->validate([
-            "status" => "required|string|in:en_cours,confirme,annule,en_shipping,shipping_company,shipped",
+            "status" => "required|string|in:en_attente,confirme,imported_to_depot,en_livraison,livree,retournee",
             "driver_id" => "nullable|exists:shipping_emps,id"
         ]);
-        
-        // Logistics check: Restricted to Admin and Shipping Company
-        $user = $request->user();
-        if (!in_array($user->role, ['ADMIN', 'SHIPPING_COMPANY'])) {
-            if (in_array($validated['status'], ['en_shipping', 'shipping_company', 'shipped'])) {
-                return response()->json(["message" => "Only Admin or Shipping Company can set logistics statuses"], 403);
-            }
-        }
 
-        $order->update($validated);
-        
+        $order->update([
+            'status' => Order::normalizeStatus($validated['status']) ?? $validated['status'],
+            'driver_id' => $validated['driver_id'] ?? $order->driver_id,
+        ]);
+
         return response()->json([
             "message" => "Order updated successfully",
             "order" => $order->fresh(['client.user', 'driver.user', 'items.product'])
@@ -68,20 +63,9 @@ class OrderController extends Controller
      */
     public function updateItemStatus(Request $request, $orderId, $itemId)
     {
-        $order = Order::findOrFail($orderId);
-        $item = $order->items()->findOrFail($itemId);
-        
-        $validated = $request->validate([
-            "status" => "required|string|in:en_cours,confirme,annule"
-        ]);
-
-        $item->update(['status' => $validated['status']]);
-        
         return response()->json([
-            "message" => "Item status updated",
-            "item" => $item,
-            "order_status" => $order->fresh()->status
-        ]);
+            'message' => 'Only the order status can be changed by admin. Item-level status is read-only.'
+        ], 403);
     }
 
     /**
