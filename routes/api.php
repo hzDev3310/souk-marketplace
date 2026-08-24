@@ -2,20 +2,16 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PublicSemanticSearchController;
-use App\Http\Controllers\Api\PublicVariantController;
 use App\Http\Controllers\Api\Admin\CategoryController;
 use App\Http\Controllers\Api\Admin\EmployeeController;
 use App\Http\Controllers\Api\Admin\InfluencerController;
 use App\Http\Controllers\Api\Admin\OrderController;
 use App\Http\Controllers\Api\Admin\ProductController;
-use App\Http\Controllers\Api\Admin\ProductVariantController;
 use App\Http\Controllers\Api\Admin\ShippingCompanyController;
 use App\Http\Controllers\Api\Admin\StoreController;
 use App\Http\Controllers\Api\Admin\PageContentController;
-use App\Http\Controllers\Api\Admin\GeoZoneController;
 use App\Http\Controllers\Api\Admin\UserManagementController;
 use App\Http\Controllers\Api\Store\StoreOrderController;
-use App\Http\Controllers\Api\Store\StoreProductVariantController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\Store\StoreProductController;
 use App\Http\Controllers\Api\Store\StoreProfileController;
@@ -36,13 +32,6 @@ Route::get('/public/ai-search', PublicSemanticSearchController::class);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{category}', [CategoryController::class, 'show']);
 
-// Public Variant Routes (storefront selector / resolution)
-Route::get('/products/{product}/variants/tree', [PublicVariantController::class, 'tree']);
-Route::get('/variants/{variant}/resolve', [PublicVariantController::class, 'resolve']);
-
-// Delivery zone options for authenticated forms (admin + store)
-Route::middleware('auth:sanctum')->get('/zones/options', [GeoZoneController::class, 'options']);
-
 // Admin Routes
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('users', function () {
@@ -52,16 +41,6 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('stores', StoreController::class);
     Route::apiResource('products', ProductController::class);
-
-    // Nested Variant Tree Management
-    Route::get('products/{product}/variants', [ProductVariantController::class, 'tree']);
-    Route::get('products/{product}/variants/options', [ProductVariantController::class, 'options']);
-    Route::post('products/{product}/variants', [ProductVariantController::class, 'store']);
-    Route::put('products/variants/{variant}', [ProductVariantController::class, 'update']);
-    Route::delete('products/variants/{variant}', [ProductVariantController::class, 'destroy']);
-    Route::get('products/variants/{variant}/children', [ProductVariantController::class, 'children']);
-    Route::post('products/variants/{variant}/icon', [ProductVariantController::class, 'icon']);
-    Route::post('products/variants/{variant}/images', [ProductVariantController::class, 'images']);
 
     // Order Management
     Route::apiResource('orders', OrderController::class);
@@ -80,12 +59,6 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::put('settings/bulk', [SettingController::class, 'bulkUpdate']);
     Route::post('settings/upload', [SettingController::class, 'uploadImage']);
     Route::put('settings/{id}', [SettingController::class, 'update']);
-
-    // Delivery Zones Management (admin-managed governorate groups)
-    Route::get('zones', [GeoZoneController::class, 'index']);
-    Route::post('zones', [GeoZoneController::class, 'store']);
-    Route::put('zones/{id}', [GeoZoneController::class, 'update']);
-    Route::delete('zones/{id}', [GeoZoneController::class, 'destroy']);
 
     // Page Content Management (About, Contact)
     Route::get('pages/{slug}', [PageContentController::class, 'show']);
@@ -151,16 +124,6 @@ Route::middleware(['auth:sanctum', 'role:store'])->prefix('store')->group(functi
     Route::get('/products/{product}', [StoreProductController::class, 'show']);
     Route::put('/products/{product}', [StoreProductController::class, 'update']);
     Route::delete('/products/{product}', [StoreProductController::class, 'destroy']);
-
-    // Nested Variant Tree Management (store-owned products only)
-    Route::get('/products/{product}/variants', [StoreProductVariantController::class, 'tree']);
-    Route::get('/products/{product}/variants/options', [StoreProductVariantController::class, 'options']);
-    Route::post('/products/{product}/variants', [StoreProductVariantController::class, 'store']);
-    Route::put('/products/variants/{variant}', [StoreProductVariantController::class, 'update']);
-    Route::delete('/products/variants/{variant}', [StoreProductVariantController::class, 'destroy']);
-    Route::get('/products/variants/{variant}/children', [StoreProductVariantController::class, 'children']);
-    Route::post('/products/variants/{variant}/icon', [StoreProductVariantController::class, 'icon']);
-    Route::post('/products/variants/{variant}/images', [StoreProductVariantController::class, 'images']);
 
     Route::get('/orders', [StoreOrderController::class, 'index']);
     Route::get('/orders/{order}', [StoreOrderController::class, 'show']);

@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/table';
 import {
     Plus, Pencil, Trash2, Search, Box, Image as ImageIcon,
-    CheckCircle2, XCircle, Activity, Eye, Package, ChevronDown, ChevronUp, GitBranch
+    CheckCircle2, XCircle, Activity, Eye, Package, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 const StoreProducts = () => {
@@ -232,15 +232,6 @@ const StoreProducts = () => {
                                                                 <Button
                                                                     size="sm"
                                                                     variant="outline"
-                                                                    onClick={() => navigate(`/dashboard/products/${product.id}/variants`)}
-                                                                    className="h-8 text-xs rounded-lg"
-                                                                >
-                                                                    <GitBranch size={14} className="mr-1" />
-                                                                    Variants
-                                                                </Button>
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="outline"
                                                                     onClick={() => handleEdit(product)}
                                                                     className="h-8 text-xs rounded-lg"
                                                                 >
@@ -329,11 +320,6 @@ const StoreProducts = () => {
                                         </TableCell>
                                         <TableCell className="py-4 px-6 text-end">
                                             <div className="flex justify-end gap-2">
-                                                <Tooltip content={t('store.products.variants') || 'Variants'}>
-                                                    <Button size="iconsm" variant="soft" rounded="xl" color="secondary" onClick={() => navigate(`/dashboard/products/${product.id}/variants`)}>
-                                                        <GitBranch size={18} />
-                                                    </Button>
-                                                </Tooltip>
                                                 <Tooltip content={t('common.actions.view')}>
                                                     <Button size="iconsm" variant="soft" rounded="xl" color="secondary" onClick={() => setViewingProduct(product)}>
                                                         <Eye size={18} />

@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/table';
 import {
     Plus, Pencil, Search, Box, Image as ImageIcon,
-    Activity, Eye, Package, GitBranch
+    Activity, Eye, Package
 } from 'lucide-react';
 const Products = () => {
     const { t } = useTranslation();
@@ -150,12 +150,6 @@ const Products = () => {
 
                                 <div className="flex items-center justify-end gap-2 pt-1">
                                     <Button
-                                        size="iconsm" variant="soft" rounded="xl"
-                                        onClick={() => navigate(`/dashboard/products/${product.id}/variants`)}
-                                    >
-                                        <GitBranch size={18} strokeWidth={2.5} />
-                                    </Button>
-                                    <Button
                                         size="iconsm" variant="soft" rounded="xl" color="info"
                                         onClick={() => setViewingProduct(product)}
                                     >
@@ -236,11 +230,6 @@ const Products = () => {
                                         </TableCell>
                                         <TableCell className="py-4 px-6 text-end">
                                             <div className="flex justify-end gap-2">
-                                                <Tooltip content={t('admin.products.variants') || 'Variants'}>
-                                                    <Button size="iconsm" variant="soft" rounded="xl" onClick={() => navigate(`/dashboard/products/${product.id}/variants`)}>
-                                                        <GitBranch size={18} />
-                                                    </Button>
-                                                </Tooltip>
                                                 <Tooltip content={t('common.actions.view')}>
                                                     <Button size="iconsm" variant="soft" rounded="xl" color="info" onClick={() => setViewingProduct(product)}>
                                                         <Eye size={18} />

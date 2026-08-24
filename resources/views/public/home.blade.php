@@ -88,7 +88,7 @@
                     </span>
                 @endif
             </div>
-            <a href="{{ route('public.all-products', ['sort' => 'orders']) }}"
+            <a href="{{ route('public.search', ['search_mode' => 'keyword', 'sort' => 'orders', 'promo' => 1]) }}"
                 class="text-xs font-black uppercase tracking-widest text-primary hover:gap-2 flex items-center gap-1 transition-all">
                 {{ __('website.viewAllDeals') ?? __('website.viewAll') }}
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -185,7 +185,7 @@
                 <p class="text-sm font-bold text-muted-foreground mt-1 uppercase tracking-widest">
                     {{ __('website.recentAdditions') ?? 'Recently Added' }}</p>
             </div>
-            <a href="{{ route('public.all-products', ['sort' => 'latest']) }}"
+            <a href="{{ route('public.search', ['search_mode' => 'keyword', 'sort' => 'latest']) }}"
                 class="text-xs font-black uppercase tracking-widest text-primary hover:gap-2 flex items-center gap-1 transition-all">
                 {{ __('website.viewAll') }}
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"

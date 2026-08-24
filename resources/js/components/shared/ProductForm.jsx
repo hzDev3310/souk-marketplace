@@ -337,7 +337,7 @@ const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
                 const created = await api.post(apiBase, data);
                 showToast(t('admin.products.messages.createSuccess') || 'Product created successfully', 'success');
                 const newId = created.data?.id;
-                navigate(newId ? `/dashboard/products/${newId}/variants` : '/dashboard/products');
+                navigate(newId ? '/dashboard/products' : '/dashboard/products');
             }
         } catch (error) {
             if (error.response?.status === 422) {
@@ -587,47 +587,6 @@ const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
                                     <FieldError error={errors.promo} />
                                 </div>
                             </div>
-                        </CardBox>
-
-                        {/* Card 5: Nested Variants */}
-                        <CardBox className="p-6 sm:p-8 rounded-[32px]">
-                            <SectionHeader
-                                icon={GitBranch}
-                                title={t('admin.products.variants.title') || 'Variants'}
-                                subtitle={t('admin.products.variants.subtitle') || 'Stock, price, images and nested options'}
-                            />
-                            {isEdit && productId ? (
-                                <div className="flex items-center justify-between flex-wrap gap-3 rounded-2xl border-2 border-dashed border-border/50 bg-muted/20 p-5">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                                            <GitBranch className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-black text-foreground">
-                                                {t('admin.products.variants.manageTitle') || 'Nested variants'}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground font-medium">
-                                                {t('admin.products.variants.manageSubtitle') || 'Add stock, price, SKU, images and link options under multiple parents.'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        onClick={() => navigate(`/dashboard/products/${productId}/variants`)}
-                                        className="rounded-xl font-bold gap-2"
-                                    >
-                                        <GitBranch size={15} />
-                                        {t('admin.products.variants.manage') || 'Manage Variants'}
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className="rounded-2xl border-2 border-dashed border-border/50 bg-muted/20 p-6 text-center">
-                                    <GitBranch className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-                                    <p className="text-sm font-bold text-foreground">
-                                        {t('admin.products.variants.createHint') || 'Save the product first, then manage its variants.'}
-                                    </p>
-                                </div>
-                            )}
                         </CardBox>
 
                         {/* Actions */}

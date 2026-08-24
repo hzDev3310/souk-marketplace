@@ -19,7 +19,6 @@ import DashboardLayout from './components/layout/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 // Admin pages
 import AdminStores from './pages/admin/Stores';
-import AdminZones from './pages/admin/Zones';
 import StoreCreate from './pages/admin/StoreCreate';
 import StoreEdit from './pages/admin/StoreEdit';
 import AdminInfluencers from './pages/admin/Influencers';
@@ -33,8 +32,6 @@ import CategoryEdit from './pages/admin/CategoryEdit';
 import AdminProducts from './pages/admin/Products';
 import ProductCreate from './pages/admin/ProductCreate';
 import ProductEdit from './pages/admin/ProductEdit';
-import ProductVariants from './pages/admin/ProductVariants';
-import ProductVariantOptions from './pages/admin/ProductVariantOptions';
 import AdminOrders from './pages/admin/Orders';
 import Parameters from './pages/admin/Parameters';
 import PageEditor from './pages/admin/PageEditor';
@@ -101,7 +98,6 @@ const App = () => {
                         <Route path="stores" element={<AdminStores />} />
                         <Route path="stores/create" element={<StoreCreate />} />
                         <Route path="stores/:id/edit" element={<StoreEdit />} />
-                        <Route path="zones" element={<AdminZones />} />
                         <Route path="influencers" element={<AdminInfluencers />} />
                         <Route path="clients" element={<AdminClients />} />
                         <Route path="clients/:clientId/orders" element={<AdminClientOrders />} />
@@ -114,8 +110,6 @@ const App = () => {
                         <Route path="products" element={<RoleBasedProducts />} />
                         <Route path="products/create" element={<RoleBasedProductCreate />} />
                         <Route path="products/:id/edit" element={<RoleBasedProductEdit />} />
-                        <Route path="products/:id/variants" element={<ProductVariants />} />
-                        <Route path="products/:id/variants/:variantId" element={<ProductVariantOptions />} />
                         <Route path="orders" element={<RoleBasedOrders />} />
                         <Route path="analytics" element={<div className="p-6 text-link">Analytics Page (Work in Progress)</div>} />
                         <Route path="parameters" element={<Parameters />} />

@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import VariantTreeView from '@/components/shared/VariantTreeView';
 import {
-    Package, Box, GitBranch, Store as StoreIcon, Sparkles, Tag,
+    Package, Box, Store as StoreIcon, Sparkles, Tag,
     Layers, CheckCircle2, AlertTriangle, PackageX, TrendingDown, BadgePercent
 } from 'lucide-react';
 
@@ -172,25 +171,7 @@ const ProductViewModal = ({ product, apiBase, showStore = false, showPromo = fal
                         )}
                     </div>
 
-                    <Button
-                        className="w-full h-12 rounded-2xl font-bold gap-2 mt-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
-                        onClick={() => navigate(`/dashboard/products/${product.id}/variants`)}
-                    >
-                        <GitBranch size={16} strokeWidth={2.5} />
-                        {t('admin.products.variants') || 'Manage Variants'}
-                    </Button>
                 </div>
-            </div>
-
-            {/* Variants */}
-            <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                    <Box size={15} className="text-primary" />
-                    <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
-                        {t('admin.products.view.variants') || 'Variants'}
-                    </h3>
-                </div>
-                <VariantTreeView productId={product.id} apiBase={apiBase} />
             </div>
         </div>
     );

@@ -14,7 +14,6 @@
 
 @section('content')
     @php
-        $variantTreeJson = json_encode($variantTree);
         $productAlbumsJson = json_encode($product->albums->map(fn ($a) => ['id' => $a->id, 'file' => $a->file]));
     @endphp
     <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
@@ -97,14 +96,6 @@
                 </p>
             </div>
 
-            @if(count($variantTree) > 0)
-            <div class="space-y-4">
-                <h4 class="font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{{ __('website.productInfo.selectVariant') }}</h4>
-                <div id="variant-selector"></div>
-                <div id="variant-stock" class="hidden text-xs font-bold text-muted-foreground"></div>
-            </div>
-            @endif
-
             <div class="pt-8 flex flex-col sm:flex-row gap-4">
                 <button id="add-to-cart-btn" data-product-id="{{ $product->id }}" class="flex-1 py-5 bg-primary text-white rounded-[32px] font-black text-sm uppercase tracking-widest hover:bg-primaryemphasis transition-all active:scale-95 shadow-xl shadow-primary/20 flex items-center justify-center gap-3">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
@@ -151,9 +142,6 @@
         addToCartBtn.addEventListener('click', function() {
             const productId = this.getAttribute('data-product-id');
             const payload = { product_id: productId, quantity: 1 };
-            if(window.variantSelection && window.variantSelection.leafId) {
-                payload.variant_id = window.variantSelection.leafId;
-            }
             fetch('{{ route("public.cart.add") }}', {
                 method: 'POST',
                 headers: {
@@ -234,197 +222,7 @@
         }
     };
 
-    // ---- Cascading Variant Selector ----
-    (function() {
-        var variantTree = {!! $variantTreeJson !!};
-        var productPrice = {{ $product->display_price }};
-        var productPromo = {{ $product->promo }};
-        var productAlbums = {!! $productAlbumsJson !!};
-        var currency = "{{ __('website.currency') }}";
-
-        var selectorEl = document.getElementById('variant-selector');
-        var priceEl = document.getElementById('variant-price');
-        var oldPriceEl = document.getElementById('variant-old-price');
-        var stockEl = document.getElementById('variant-stock');
-        var addToCartBtn = document.getElementById('add-to-cart-btn');
-
-        if (!selectorEl || variantTree.length === 0) return;
-
-        window.variantSelection = { leafId: null, leafNode: null };
-
-        var selectedIds = {};
-
-        function renderLevel(nodes, level) {
-            // group nodes by attribute_name so mixed attributes render as labeled groups
-            var groups = {};
-            nodes.forEach(function(node) {
-                var key = node.attribute_name || 'Option';
-                if (!groups[key]) groups[key] = [];
-                groups[key].push(node);
-            });
-
-            var wrapper = document.createElement('div');
-            wrapper.className = 'space-y-3';
-
-            Object.keys(groups).forEach(function(attrName) {
-                var group = document.createElement('div');
-                group.className = 'space-y-1';
-
-                var label = document.createElement('p');
-                label.className = 'font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1';
-                label.textContent = attrName;
-                group.appendChild(label);
-
-                var chips = document.createElement('div');
-                chips.className = 'flex flex-wrap gap-2';
-
-                groups[attrName].forEach(function(node) {
-                    var btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'px-5 py-3 glass border-2 border-border/40 rounded-2xl font-bold text-xs hover:border-primary hover:text-primary transition-all active:scale-95 inline-flex items-center';
-                    if (node.option_value) {
-                        var sw = document.createElement('span');
-                        sw.className = 'w-5 h-5 rounded-full border border-black/10 shrink-0 mr-2 overflow-hidden';
-                        var isHex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(node.option_value);
-                        if (isHex) {
-                            sw.style.backgroundColor = node.option_value;
-                        } else {
-                            sw.style.backgroundImage = "url('" + node.option_value + "')";
-                            sw.style.backgroundSize = 'cover';
-                            sw.style.backgroundPosition = 'center';
-                        }
-                        btn.appendChild(sw);
-                    }
-                    btn.appendChild(document.createTextNode(node.attribute_value));
-                    btn.addEventListener('click', function() {
-                        selectedIds[level] = node.id;
-                        // clear deeper selections
-                        Object.keys(selectedIds).forEach(function(k) { if (parseInt(k) > level) delete selectedIds[k]; });
-                        document.querySelectorAll('[data-variant-level]').forEach(function(el) {
-                            if (parseInt(el.getAttribute('data-variant-level')) > level) el.remove();
-                        });
-                        // highlight within the active group only
-                        chips.querySelectorAll('button').forEach(function(b) { b.classList.remove('border-primary', 'text-primary'); b.classList.add('border-border/40'); });
-                        btn.classList.remove('border-border/40');
-                        btn.classList.add('border-primary', 'text-primary');
-
-                        if (node.children && node.children.length > 0) {
-                            var next = document.createElement('div');
-                            next.setAttribute('data-variant-level', level + 1);
-                            next.appendChild(renderLevel(node.children, level + 1));
-                            wrapper.appendChild(next);
-                            clearSelection();
-                        } else {
-                            // leaf selected
-                            window.variantSelection.leafId = node.id;
-                            window.variantSelection.leafNode = node;
-                            updateProductDisplay(node);
-                        }
-
-                        // switch the base image to the selected variant's image
-                        setVariantImage(node);
-                    });
-                    chips.appendChild(btn);
-                });
-
-                group.appendChild(chips);
-                wrapper.appendChild(group);
-            });
-
-            return wrapper;
-        }
-
-        function clearSelection() {
-            window.variantSelection = { leafId: null, leafNode: null };
-            resetProductDisplay();
-        }
-
-        function setVariantImage(node) {
-            var imgs = (node.albums && node.albums.length > 0) ? node.albums : productAlbums;
-            if (imgs.length === 0) return;
-            var file = imgs[0].file;
-            var mainImg = document.getElementById('main-product-image');
-            if (mainImg) mainImg.src = file;
-
-            // keep all product thumbnails visible, just highlight the matching one
-            var thumbContainer = document.getElementById('product-thumbnails');
-            if (thumbContainer) {
-                thumbContainer.querySelectorAll('img').forEach(function(img) {
-                    var wrapper = img.parentElement;
-                    if (!wrapper) return;
-                    var isMatch = img.getAttribute('src') === file;
-                    wrapper.classList.toggle('border-primary', isMatch);
-                    wrapper.classList.toggle('border-border/40', !isMatch);
-                });
-            }
-        }
-
-        function updateProductDisplay(leaf) {
-            // price always comes from the product
-            var basePrice = productPrice;
-            var salePrice = productPromo > 0 ? basePrice * (1 - productPromo / 100) : basePrice;
-            priceEl.textContent = salePrice.toFixed(2) + ' ';
-            var span = document.createElement('span');
-            span.className = 'text-xs font-black text-muted-foreground uppercase ml-1';
-            span.textContent = currency;
-            priceEl.appendChild(span);
-
-            if (productPromo > 0 && oldPriceEl) {
-                oldPriceEl.textContent = basePrice.toFixed(2) + ' ' + currency;
-                oldPriceEl.style.display = '';
-            } else if (oldPriceEl) {
-                oldPriceEl.style.display = 'none';
-            }
-
-            // stock
-            var stock = leaf.stock_quantity || 0;
-            stockEl.textContent = stock > 0 ? stock + ' {{ __("website.productInfo.stockAvailable") }}' : '{{ __("website.productInfo.outOfStock") }}';
-            stockEl.className = stock > 0 ? 'block text-xs font-bold text-success mt-1' : 'block text-xs font-bold text-error mt-1';
-
-            // keep all product thumbnails visible; the variant image becomes the base image
-            setVariantImage(leaf);
-
-            // enable add to cart
-            if (addToCartBtn) addToCartBtn.classList.remove('opacity-50', 'pointer-events-none');
-        }
-
-        function resetProductDisplay() {
-            window.variantSelection = { leafId: null, leafNode: null };
-            var basePrice = productPrice;
-            var salePrice = productPromo > 0 ? basePrice * (1 - productPromo / 100) : basePrice;
-            priceEl.textContent = salePrice.toFixed(2) + ' ';
-            var span = document.createElement('span');
-            span.className = 'text-xs font-black text-muted-foreground uppercase ml-1';
-            span.textContent = currency;
-            priceEl.appendChild(span);
-            if (productPromo > 0 && oldPriceEl) {
-                oldPriceEl.textContent = basePrice.toFixed(2) + ' ' + currency;
-                oldPriceEl.style.display = '';
-            } else if (oldPriceEl) {
-                oldPriceEl.style.display = 'none';
-            }
-            stockEl.className = 'hidden';
-            stockEl.textContent = '';
-            // restore original thumbnails
-            var thumbContainer = document.getElementById('product-thumbnails');
-            if (thumbContainer && productAlbums.length > 0) {
-                thumbContainer.innerHTML = '';
-                productAlbums.forEach(function(img) {
-                    var div = document.createElement('div');
-                    div.className = 'w-24 h-24 bg-card glass border border-border/40 rounded-3xl overflow-hidden cursor-pointer hover:border-primary transition-colors';
-                    div.innerHTML = '<img src="' + img.file + '" class="w-full h-full object-cover">';
-                    div.addEventListener('click', function() { window.productGallery.setImage(img.file, div); });
-                    thumbContainer.appendChild(div);
-                });
-                var mainImg = document.getElementById('main-product-image');
-                if (mainImg && productAlbums.length > 0) mainImg.src = productAlbums[0].file;
-            }
-            if (addToCartBtn) addToCartBtn.classList.add('opacity-50', 'pointer-events-none');
-        }
-
-        selectorEl.appendChild(renderLevel(variantTree, 0));
-        if (addToCartBtn && variantTree.length > 0) addToCartBtn.classList.add('opacity-50', 'pointer-events-none');
-    })();
+    // Variant selection intentionally disabled for this storefront build.
 </script>
 @endpush
 
