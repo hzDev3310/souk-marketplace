@@ -9,6 +9,7 @@
     @yield('seo')
 
     <title>{{ $title ?? 'Souk AI - Premium Marketplace' }}</title>
+    <link rel="icon" type="image/png" href="/images/logo.png">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

@@ -66,8 +66,8 @@ const Sidebar = ({ onClose }) => {
       {/* Logo Section */}
       <div className="flex items-center h-24 px-8">
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white shadow-lg shadow-primary/20 group-hover:rotate-12 transition-transform duration-500">
-            <Icons.Zap size={22} fill="white" />
+          <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-lg shadow-primary/20 group-hover:rotate-12 transition-transform duration-500 bg-card flex items-center justify-center">
+            <img src="/images/logo.png" alt="Souk AI" className="w-full h-full object-cover" />
           </div>
           <div className="flex flex-col">
             <span className="text-xl font-black text-foreground tracking-tighter">

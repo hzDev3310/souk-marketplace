@@ -8,13 +8,13 @@
                 <!-- Logo -->
                 <a href="/" class="flex items-center gap-3 group shrink-0">
                     <div
-                        class="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/25 group-hover:scale-105 transition-transform duration-300">
-                        <span class="text-white font-black text-xl tracking-tight">W</span>
-                        <div class="absolute inset-0 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20">
-                        </div>
+                        class="relative w-11 h-11 rounded-2xl overflow-hidden flex items-center justify-center shadow-lg shadow-purple-500/25 group-hover:scale-105 transition-transform duration-300 bg-white dark:bg-slate-800">
+                        <img src="/images/logo.png" alt="Souk AI"
+                            class="w-full h-full object-cover">
+                      
                     </div>
                     <span
-                        class="text-xl font-black tracking-tight bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">WallMantra</span>
+                        class="text-xl font-black tracking-tight bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">Souk AI</span>
                 </a>
 
                 <!-- Search Bar - Desktop (Segmented Pill) -->

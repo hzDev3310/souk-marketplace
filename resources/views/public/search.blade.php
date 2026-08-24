@@ -1,46 +1,78 @@
 @extends('layouts.public')
 
 @section('seo')
-    <title>Search Results for "{{ $query }}" - Souk AI</title>
-    <meta name="description" content="Search results for {{ $query }} on Souk AI premium marketplace.">
+    @if(filled($query))
+        <title>Search Results for "{{ $query }}" - Souk AI</title>
+        <meta name="description" content="Search results for {{ $query }} on Souk AI premium marketplace.">
+    @else
+        <title>{{ __('website.allProducts') }} - Souk AI</title>
+        <meta name="description" content="{{ __('website.allProductsDesc') }}">
+    @endif
 @endsection
 
 @section('content')
-    <div class="mb-6 lg:hidden">
+    @php
+        $searchCategoryUrl = function ($id) use ($query, $sortBy, $promoOnly, $searchMode, $categoryId) {
+            $params = [
+                'q' => $query,
+                'search_mode' => $searchMode,
+                'category_id' => $categoryId == $id ? null : $id,
+                'promo' => $promoOnly ? 1 : null,
+                'sort' => $sortBy,
+                'min_price' => request('min_price'),
+                'max_price' => request('max_price'),
+            ];
+
+            return route('public.search', array_filter($params, fn ($v) => filled($v)));
+        };
+    @endphp
+
+    <div class="mb-6 lg:hidden flex items-center gap-3">
         <button
             type="button"
             data-sidebar-open="search-page"
             class="inline-flex items-center gap-2 rounded-2xl border border-border/40 bg-card px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-foreground"
         >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="7" x2="17" y1="12" y2="12"/><line x1="10" x2="14" y1="18" y2="18"/></svg>
-            {{ __('website.categories') }}
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            {{ __('website.search.filterBy') }}
         </button>
+        <span class="inline-flex items-center gap-2 rounded-2xl border border-border/40 bg-card px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">
+            {{ $products->total() }} {{ __('website.items') }}
+        </span>
     </div>
 
     <div data-sidebar-overlay="search-page" class="pointer-events-none fixed inset-0 z-[90] bg-black/50 opacity-0 transition-opacity duration-300 lg:hidden">
         <div data-sidebar-panel="search-page" class="ml-auto h-full w-[88vw] max-w-sm overflow-y-auto bg-background p-4 transition-transform duration-300 translate-x-full">
             <div class="mb-4 flex items-center justify-between">
-                <h2 class="text-sm font-black uppercase tracking-[0.2em] text-foreground">{{ __('website.categories') }}</h2>
+                <h2 class="text-sm font-black uppercase tracking-[0.2em] text-foreground">{{ __('website.search.filterBy') }}</h2>
                 <button type="button" data-sidebar-close="search-page" class="flex h-10 w-10 items-center justify-center rounded-2xl bg-muted/30 text-foreground">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 6-12 12"/><path d="m6 6 12 12"/></svg>
                 </button>
             </div>
 
-            <div class="space-y-4">
-                <div class="glass border border-border/40 rounded-[28px] p-5 premium-shadow">
+            @if($products->count() > 0)
+            <!-- Filter & Sort Card (Mobile / Tablet) -->
+            <x-search-filters :query="$query" :search-mode="$searchMode" :category-id="$categoryId" :promo-only="$promoOnly" :sort-by="$sortBy" />
+            <div class="h-px bg-border/40 my-5"></div>
+            @endif
+
+            <div class="glass border border-border/40 rounded-[28px] p-5 premium-shadow mb-4">
+                    <h3 class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">{{ __('website.categories') }}</h3>
                     <nav class="space-y-2">
                         @foreach($categories as $cat)
                         <div class="space-y-1">
-                            <a href="{{ route('public.category', $cat->slug) }}" class="flex items-center justify-between rounded-2xl px-3 py-3 text-muted-foreground transition-all hover:bg-muted/30 hover:text-foreground">
+                            <a href="{{ $searchCategoryUrl($cat->id) }}" class="flex items-center justify-between rounded-2xl px-3 py-3 transition-all {{ $categoryId == $cat->id ? 'bg-primary/10 text-primary border border-primary/20' : 'text-muted-foreground hover:bg-muted/30 hover:text-foreground' }}">
                                 <span class="text-xs font-bold uppercase tracking-wider">{{ $cat->{'name_'.app()->getLocale()} }}</span>
-                                @if($cat->children->count() > 0)
+                                @if($categoryId == $cat->id)
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                @elseif($cat->children->count() > 0)
                                     <span class="text-[10px] font-black">{{ $cat->children->count() }}</span>
                                 @endif
                             </a>
                             @if($cat->children->count() > 0)
                             <div class="ms-4 border-s border-border/40 ps-3 space-y-1">
                                 @foreach($cat->children as $child)
-                                <a href="{{ route('public.category', $child->slug) }}" class="flex items-center rounded-xl px-3 py-2 text-[11px] font-bold text-muted-foreground transition-all hover:bg-muted/30 hover:text-foreground">
+                                <a href="{{ $searchCategoryUrl($child->id) }}" class="flex items-center justify-between rounded-xl px-3 py-2 text-[11px] font-bold transition-all {{ $categoryId == $child->id ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/30 hover:text-foreground' }}">
                                     {{ $child->{'name_'.app()->getLocale()} }}
                                 </a>
                                 @endforeach
@@ -59,7 +91,6 @@
                         <li>{{ __('website.search.tip3') }}</li>
                     </ul>
                 </div>
-            </div>
         </div>
     </div>
 
@@ -75,17 +106,19 @@
                 <nav class="space-y-2">
                     @foreach($categories as $cat)
                     <div class="space-y-1">
-                        <a href="{{ route('public.category', $cat->slug) }}" 
-                           class="flex items-center justify-between group p-3 rounded-2xl transition-all text-muted-foreground hover:bg-muted/30 hover:text-foreground">
+                        <a href="{{ $searchCategoryUrl($cat->id) }}"
+                           class="flex items-center justify-between group p-3 rounded-2xl border transition-all {{ $categoryId == $cat->id ? 'bg-primary/10 text-primary border-primary/20' : 'border-transparent text-muted-foreground hover:bg-muted/30 hover:text-foreground' }}">
                             <span class="text-xs font-bold uppercase tracking-wider">{{ $cat->{'name_'.app()->getLocale()} }}</span>
-                            @if($cat->children->count() > 0)
+                            @if($categoryId == $cat->id)
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            @elseif($cat->children->count() > 0)
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover:rotate-90"><path d="m9 18 6-6-6-6"/></svg>
                             @endif
                         </a>
                         @if($cat->children->count() > 0)
                         <div class="ms-4 border-s border-border/40 ps-3 space-y-1">
                             @foreach($cat->children as $child)
-                            <a href="{{ route('public.category', $child->slug) }}" class="flex items-center rounded-xl px-3 py-2 text-[11px] font-bold text-muted-foreground transition-all hover:bg-muted/30 hover:text-foreground">
+                            <a href="{{ $searchCategoryUrl($child->id) }}" class="flex items-center justify-between rounded-xl px-3 py-2 text-[11px] font-bold transition-all {{ $categoryId == $child->id ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/30 hover:text-foreground' }}">
                                 {{ $child->{'name_'.app()->getLocale()} }}
                             </a>
                             @endforeach
@@ -96,14 +129,7 @@
                 </nav>
             </div>
             
-            <div class="bg-card glass border border-border/40 rounded-[40px] p-8 premium-shadow">
-                <h4 class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">{{ __('website.search.tips') }}</h4>
-                <ul class="text-[10px] font-bold text-muted-foreground space-y-2 list-disc pl-4">
-                    <li>{{ __('website.search.tip1') }}</li>
-                    <li>{{ __('website.search.tip2') }}</li>
-                    <li>{{ __('website.search.tip3') }}</li>
-                </ul>
-            </div>
+         
         </aside>
 
         <!-- Main Content -->
@@ -115,18 +141,42 @@
                 <nav class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-6">
                     <a href="/" class="hover:text-primary transition-colors">{{ __('website.nav.home') }}</a>
                     <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-                    <span class="text-foreground">{{ __('website.search.resultsFor') }}</span>
+                    <span class="text-foreground">{{ filled($query) ? __('website.search.resultsFor') : __('website.allProducts') }}</span>
                 </nav>
 
                 <h1 class="text-3xl md:text-5xl font-black text-foreground tracking-tight mb-4">
-                    {{ __('website.search.resultsFor') }} <span class="text-primary italic">"{{ $query }}"</span>
+                    @if(filled($query))
+                        {{ __('website.search.resultsFor') }} <span class="text-primary italic">"{{ $query }}"</span>
+                    @else
+                        <span class="text-primary italic">{{ __('website.allProducts') }}</span>
+                    @endif
                 </h1>
                 <p class="text-muted-foreground font-medium">
                     {{ __('website.search.found') }} {{ $products->total() }} {{ __('website.search.matching') }}
                 </p>
+
+                @php
+                    $activeCategory = $categories->firstWhere('id', $categoryId)
+                        ?? $categories->flatMap->children->firstWhere('id', $categoryId);
+                @endphp
+                @if($activeCategory)
+                <div class="mt-5">
+                    <a href="{{ route('public.search', array_filter(['q' => $query, 'search_mode' => $searchMode, 'promo' => $promoOnly ? 1 : null, 'sort' => $sortBy], fn ($v) => filled($v))) }}"
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-[11px] font-black uppercase tracking-wider text-primary hover:bg-primary/20 transition-all">
+                        {{ $activeCategory->{'name_'.app()->getLocale()} }}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </a>
+                </div>
+                @endif
             </div>
 
             @if($products->count() > 0)
+
+            <!-- Filter & Sort Card (Desktop) -->
+            <div class="hidden lg:block mb-10">
+                <x-search-filters :query="$query" :search-mode="$searchMode" :category-id="$categoryId" :promo-only="$promoOnly" :sort-by="$sortBy" />
+            </div>
+
             <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
                  @foreach($products as $product)
                     <x-product-card :product="$product" :show-store="true" />
@@ -134,7 +184,7 @@
             </div>
 
             <div class="mt-16 flex justify-center">
-                {{ $products->appends(['q' => $query])->links() }}
+                {{ $products->appends(request()->only(['q', 'search_mode', 'category_id', 'promo', 'sort', 'min_price', 'max_price']))->links() }}
             </div>
             @else
             <div class="py-20 text-center space-y-6 glass rounded-[40px] border border-border/40">
@@ -143,7 +193,11 @@
                 </div>
                 <div class="space-y-2">
                     <h3 class="text-2xl font-black text-foreground">{{ __('website.search.noMatches') }}</h3>
-                    <p class="text-muted-foreground font-medium">{{ __('website.search.noMatchesDesc') }} "{{ $query }}".</p>
+                    <p class="text-muted-foreground font-medium">
+                        @if(filled($query))
+                            {{ __('website.search.noMatchesDesc') }} "{{ $query }}".
+                        @endif
+                    </p>
                 </div>
                 <a href="/" class="inline-block px-8 py-4 bg-primary text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-primaryemphasis transition-all">{{ __('website.search.explore') }}</a>
             </div>

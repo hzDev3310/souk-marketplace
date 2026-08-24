@@ -166,16 +166,32 @@ class PublicController extends Controller
     public function search(Request $request)
     {
         $query = $request->input('q');
-        $minPrice = $request->input('min_price', 0);
-        $maxPrice = $request->input('max_price', 999999);
+        $minPrice = $request->filled('min_price') ? (float) $request->input('min_price') : 0;
+        $maxPrice = $request->filled('max_price') ? (float) $request->input('max_price') : 999999;
         $categoryId = $request->input('category_id');
         $searchMode = $request->input('search_mode', 'keyword');
+        $promoOnly = $request->boolean('promo');
+        $sortBy = $request->input('sort');
         $perPage = 12;
 
         $baseQuery = Product::whereHas('store', function($q) {
                 $this->applyPublicStoreVisibility($q);
             })
             ->whereBetween('price', [$minPrice, $maxPrice]);
+
+        if ($promoOnly) {
+            $baseQuery->where('promo', '>', 0);
+        }
+
+        if ($sortBy && in_array($sortBy, ['price_asc', 'price_desc', 'newest', 'oldest', 'alpha'])) {
+            match ($sortBy) {
+                'price_asc' => $baseQuery->orderBy('price', 'asc'),
+                'price_desc' => $baseQuery->orderBy('price', 'desc'),
+                'newest' => $baseQuery->orderBy('created_at', 'desc'),
+                'oldest' => $baseQuery->orderBy('created_at', 'asc'),
+                'alpha' => $baseQuery->orderBy('name_' . app()->getLocale(), 'asc'),
+            };
+        }
 
         if ($categoryId) {
             $baseQuery->whereJsonContains('categories', $categoryId);
@@ -225,7 +241,7 @@ class PublicController extends Controller
             ->with('children')
             ->get();
 
-        return view('public.search', compact('products', 'query', 'categories', 'minPrice', 'maxPrice', 'categoryId'));
+        return view('public.search', compact('products', 'query', 'categories', 'minPrice', 'maxPrice', 'categoryId', 'promoOnly', 'sortBy', 'searchMode'));
     }
 
     public function cart()
