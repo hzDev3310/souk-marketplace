@@ -124,9 +124,6 @@
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <p class="text-xs font-bold text-foreground truncate">{{ $product->{'name_'.app()->getLocale()} }}</p>
-                                        @if($item['variant_name'])
-                                            <p class="text-[10px] font-bold text-primary">{{ $item['variant_name'] }}</p>
-                                        @endif
                                         <p class="text-[10px] text-muted-foreground">{{ __('website.checkout.qty') }}: {{ $item['quantity'] }}</p>
                                     </div>
                                     <p class="text-xs font-black text-foreground">

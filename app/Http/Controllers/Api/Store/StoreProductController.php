@@ -9,6 +9,7 @@ use App\Models\ProductAlbum;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class StoreProductController extends Controller
 {
@@ -29,7 +30,8 @@ class StoreProductController extends Controller
 
         $products = Product::where('store_id', $store->id)
             ->with('albums')
-            ->paginate(15);
+            ->latest()
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -74,6 +76,8 @@ class StoreProductController extends Controller
             ], 422);
         }
 
+        $slug = Str::slug($request->name_en ?? $request->name_fr ?? 'product') . '-' . uniqid();
+
         $product = Product::create([
             'store_id' => $store->id,
             'name_fr' => $request->name_fr,
@@ -85,7 +89,8 @@ class StoreProductController extends Controller
             'price' => $request->price,
             'stock' => $request->stock,
             'promo' => $request->promo ?? 0,
-            'categories' => $request->categories ? json_decode($request->categories) : [],
+            'slug' => $slug,
+            'categories' => $request->categories ? json_decode($request->categories, true) : [],
         ]);
 
         // Handle image uploads
@@ -169,7 +174,13 @@ class StoreProductController extends Controller
             ], 422);
         }
 
-        $data = $request->except('images');
+        $data = $request->except(['images', 'store_id']);
+        $data['store_id'] = $store->id;
+
+        if (($data['name_en'] ?? null) || ($data['name_fr'] ?? null)) {
+            $data['slug'] = Str::slug($data['name_en'] ?? $data['name_fr'] ?? $product->name_en ?? $product->name_fr) . '-' . uniqid();
+        }
+
         $product->update($data);
 
         // Delete albums not in keep_images

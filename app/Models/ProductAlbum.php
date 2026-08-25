@@ -13,8 +13,25 @@ class ProductAlbum extends Model {
 
     public function setFileAttribute($value): void { $this->attributes['imageUrl'] = $value; }
     public function getFileAttribute(): ?string {
-        $url = $this->attributes['imageUrl'] ?? null;
-        return $url ? (str_starts_with($url, 'http') ? $url : '/storage/' . $url) : null;
+        $url = $this->attributes['imageUrl'] ?? $this->attributes['file'] ?? null;
+
+        if (!$url) {
+            return null;
+        }
+
+        if (str_starts_with($url, 'http')) {
+            return $url;
+        }
+
+        if (str_starts_with($url, '/storage/')) {
+            return $url;
+        }
+
+        if (str_starts_with($url, 'storage/')) {
+            return '/' . $url;
+        }
+
+        return '/storage/' . ltrim($url, '/');
     }
     public function setIsCoverAttribute($value): void { $this->attributes['isPrimary'] = (bool) $value; }
     public function getIsCoverAttribute(): bool { return (bool) ($this->attributes['isPrimary'] ?? false); }

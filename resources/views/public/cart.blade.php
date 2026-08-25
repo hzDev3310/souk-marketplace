@@ -58,9 +58,6 @@
                     <div class="flex-1 space-y-2 text-center md:text-left">
                         <p class="text-[10px] font-black uppercase tracking-widest text-primary">{{ $product->store->{'name_'.app()->getLocale()} }}</p>
                         <h3 class="font-bold text-foreground text-lg">{{ $product->{'name_'.app()->getLocale()} }}</h3>
-                        @if($item['variant_name'])
-                            <p class="text-xs font-bold text-primary">{{ $item['variant_name'] }}</p>
-                        @endif
                         <p class="text-sm font-black text-foreground">{{ number_format($price, 2) }} {{ __('website.currency') }}</p>
                     </div>
 

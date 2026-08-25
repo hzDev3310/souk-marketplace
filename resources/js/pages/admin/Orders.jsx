@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import CardBox from "@/components/shared/CardBox";
 import AdminPageLayout from "@/components/shared/AdminPageLayout";
@@ -43,6 +44,7 @@ import {
 
 const Orders = () => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(false);
     const [verifying, setVerifying] = useState(false);
@@ -52,10 +54,28 @@ const Orders = () => {
     const fetchOrders = async () => {
         setLoading(true);
         try {
+            console.log("Fetching admin orders from /api/admin/orders...");
             const response = await api.get("/admin/orders");
-            setOrders(response.data.data || []);
+            const payload = response?.data;
+            let nextOrders = [];
+
+            if (Array.isArray(payload)) {
+                nextOrders = payload;
+            } else if (Array.isArray(payload?.data)) {
+                nextOrders = payload.data;
+            } else if (Array.isArray(payload?.data?.data)) {
+                nextOrders = payload.data.data;
+            }
+
+            console.log("Admin orders fetch response:", payload);
+            console.log("Parsed admin orders:", nextOrders);
+            setOrders(nextOrders);
         } catch (error) {
-            console.error("Error fetching orders:", error);
+            console.error("Error fetching orders: full error object:", error);
+            console.error("Error fetching orders: response data:", error?.response?.data);
+            console.error("Error fetching orders: status:", error?.response?.status);
+            console.error("Error fetching orders: headers:", error?.response?.headers);
+            setOrders([]);
         } finally {
             setLoading(false);
         }
@@ -71,7 +91,7 @@ const Orders = () => {
             fetchOrders();
             if (viewingOrder && viewingOrder.id === orderId) {
                 const refreshed = await api.get(`/admin/orders/${orderId}`);
-                setViewingOrder(refreshed.data);
+                setViewingOrder(refreshed.data?.data ?? refreshed.data);
             }
         } catch (error) {
             console.error("Error updating status:", error);
@@ -85,7 +105,7 @@ const Orders = () => {
             fetchOrders();
             if (viewingOrder && viewingOrder.id === orderId) {
                 const refreshed = await api.get(`/admin/orders/${orderId}`);
-                setViewingOrder(refreshed.data);
+                setViewingOrder(refreshed.data?.data ?? refreshed.data);
             }
         } catch (error) {
             console.error("Verification failed:", error);
@@ -99,7 +119,7 @@ const Orders = () => {
             await api.post(`/admin/orders/${orderId}/items/${itemId}/status`, { status });
             if (viewingOrder && viewingOrder.id === orderId) {
                 const refreshed = await api.get(`/admin/orders/${orderId}`);
-                setViewingOrder(refreshed.data);
+                setViewingOrder(refreshed.data?.data ?? refreshed.data);
             }
             fetchOrders();
         } catch (error) {
@@ -113,7 +133,7 @@ const Orders = () => {
             await api.delete(`/admin/orders/${orderId}/items/${itemId}`);
             if (viewingOrder && viewingOrder.id === orderId) {
                 const refreshed = await api.get(`/admin/orders/${orderId}`);
-                setViewingOrder(refreshed.data);
+                setViewingOrder(refreshed.data?.data ?? refreshed.data);
             }
             fetchOrders();
         } catch (error) {
@@ -161,11 +181,16 @@ const Orders = () => {
         }
     };
 
-    const filteredOrders = orders.filter(order => 
-        (order.order_number && order.order_number.toLowerCase().includes(search.toLowerCase())) ||
-        order.id.toLowerCase().includes(search.toLowerCase()) ||
-        order.client?.user?.name.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredOrders = orders.filter(order => {
+        const orderNumber = String(order?.order_number || order?.id || "");
+        const clientName = String(order?.client?.user?.name || "");
+        const query = (search || "").toLowerCase();
+
+        return (
+            orderNumber.toLowerCase().includes(query) ||
+            clientName.toLowerCase().includes(query)
+        );
+    });
 
     return (
         <AdminPageLayout
@@ -238,10 +263,7 @@ const Orders = () => {
                                         <div className="flex items-center gap-2">
                                             <Button
                                                 size="iconsm" variant="soft" rounded="xl" color="info"
-                                                onClick={async () => {
-                                                    const res = await api.get(`/admin/orders/${order.id}`);
-                                                    setViewingOrder(res.data);
-                                                }}
+                                                onClick={() => navigate(`/dashboard/orders/${order.id}`)}
                                             >
                                                 <Eye size={18} />
                                             </Button>
@@ -342,10 +364,7 @@ const Orders = () => {
                                                     variant="soft" 
                                                     rounded="xl"
                                                     color="info"
-                                                    onClick={async () => {
-                                                        const res = await api.get(`/admin/orders/${order.id}`);
-                                                        setViewingOrder(res.data);
-                                                    }}
+                                                    onClick={() => navigate(`/dashboard/orders/${order.id}`)}
                                                 >
                                                     <Eye size={18} />
                                                 </Button>
@@ -521,11 +540,13 @@ const Orders = () => {
                                                             <TableCell className="py-3">
                                                                 <div className="flex items-center gap-3">
                                                                     <div className="w-10 h-10 rounded-lg bg-muted flex-shrink-0 overflow-hidden">
-                                                                        {item.product?.albums?.[0] ? (
-                                                                            <img src={item.product.albums[0].file} className="w-full h-full object-cover" />
-                                                                        ) : (
-                                                                            <img src="/storage/empty/empty.webp" className="w-full h-full object-cover" />
-                                                                        )}
+                                                                        <img
+                                                                            src={item.product?.albums?.find((album) => album?.file)?.file || item.product?.albums?.[0]?.file || item.product?.albums?.[0]?.imageUrl || item.product?.imageUrl || '/storage/empty/empty.webp'}
+                                                                            className="w-full h-full object-cover"
+                                                                            onError={(e) => {
+                                                                                e.currentTarget.src = '/storage/empty/empty.webp';
+                                                                            }}
+                                                                        />
                                                                     </div>
                                                                     <div className="text-start">
                                                                         <p className="font-bold text-sm leading-tight">{item.product?.name_fr}</p>

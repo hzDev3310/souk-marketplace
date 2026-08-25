@@ -114,6 +114,7 @@ Route::middleware(['auth:sanctum', 'role:shipping_company'])->prefix('shipping')
 Route::middleware(['auth:sanctum', 'role:store'])->prefix('store')->group(function () {
     Route::get('/profile', [StoreProfileController::class, 'profile']);
     Route::post('/profile', [StoreProfileController::class, 'updateProfile']);
+    Route::get('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'list']);
 
     Route::get('/products', [StoreProductController::class, 'index']);
     Route::post('/products', [StoreProductController::class, 'store']);

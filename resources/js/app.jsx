@@ -32,6 +32,7 @@ import AdminProducts from './pages/admin/Products';
 import ProductCreate from './pages/admin/ProductCreate';
 import ProductEdit from './pages/admin/ProductEdit';
 import AdminOrders from './pages/admin/Orders';
+import OrderDetails from './pages/OrderDetails';
 
 // Store pages
 import StoreProducts from './pages/store/Products';
@@ -110,6 +111,7 @@ const App = () => {
                         <Route path="products/create" element={<RoleBasedProductCreate />} />
                         <Route path="products/:id/edit" element={<RoleBasedProductEdit />} />
                         <Route path="orders" element={<RoleBasedOrders />} />
+                        <Route path="orders/:id" element={<OrderDetails />} />
                         <Route path="analytics" element={<div className="p-6 text-link">Analytics Page (Work in Progress)</div>} />
 
                         <Route path="profile" element={<RoleBasedProfile />} />

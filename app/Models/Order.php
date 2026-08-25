@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Order extends Model {
     use HasUuids;
-    protected $fillable = ['order_number', 'client_id', 'influencer_id', 'status', 'totalAmount', 'driver_id'];
+    protected $fillable = ['order_number', 'client_id', 'status', 'totalAmount'];
 
     public const ORDER_STATUSES = [
         'en_attente',
@@ -28,10 +28,7 @@ class Order extends Model {
     }
 
     public function client() { return $this->belongsTo(Client::class); }
-    public function influencer() { return $this->belongsTo(Influencer::class); }
     public function items() { return $this->hasMany(OrderItem::class); }
-    public function factures() { return $this->hasMany(Facture::class); }
-    public function driver() { return $this->belongsTo(ShippingEmp::class, 'driver_id'); }
 
     public static function normalizeStatus(?string $status): ?string
     {

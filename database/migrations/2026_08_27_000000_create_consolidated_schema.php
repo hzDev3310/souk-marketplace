@@ -100,24 +100,6 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('influencers', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->unique()->constrained('users')->cascadeOnDelete();
-            $table->string('referralCode')->unique();
-            $table->float('commissionRate')->default(5);
-            $table->string('profilePicture')->nullable();
-            $table->string('phone')->nullable();
-            $table->string('address')->nullable();
-            $table->string('city')->nullable();
-            $table->string('codePostal')->nullable();
-            $table->string('cin')->nullable();
-            $table->string('rib')->nullable();
-            $table->string('d17')->nullable();
-            $table->boolean('isActive')->default(true);
-            $table->string('slug')->unique();
-            $table->timestamps();
-        });
-
         Schema::create('stores', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->unique()->constrained('users')->cascadeOnDelete();
@@ -146,31 +128,6 @@ return new class extends Migration {
             $table->foreignUuid('user_id')->unique()->constrained('users')->cascadeOnDelete();
             $table->float('platformCommissionAdmin')->default(10);
             $table->float('platformCommissionShare')->default(5);
-            $table->timestamps();
-        });
-
-        Schema::create('shipping_companies', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->unique()->constrained('users')->cascadeOnDelete();
-            $table->string('name');
-            $table->string('contactInfo')->nullable();
-            $table->string('companyPhone')->nullable();
-            $table->string('responsiblePhone')->nullable();
-            $table->string('address')->nullable();
-            $table->string('cin')->nullable();
-            $table->string('matriculeFiscale')->nullable();
-            $table->string('rib')->nullable();
-            $table->timestamps();
-        });
-
-        Schema::create('shipping_emps', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->unique()->constrained('users')->cascadeOnDelete();
-            $table->string('pdp')->nullable();
-            $table->string('phone')->nullable();
-            $table->string('address')->nullable();
-            $table->string('cin')->nullable();
-            $table->string('rib')->nullable();
             $table->timestamps();
         });
 
@@ -235,10 +192,8 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->string('order_number')->unique()->nullable()->index();
             $table->foreignUuid('client_id')->constrained('clients');
-            $table->foreignUuid('influencer_id')->nullable()->constrained('influencers')->nullOnDelete();
             $table->string('status')->default('PENDING');
             $table->decimal('totalAmount', 10, 2);
-            $table->foreignUuid('driver_id')->nullable()->constrained('shipping_emps')->nullOnDelete();
             $table->timestamps();
         });
 
@@ -257,7 +212,7 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->foreignUuid('order_id')->constrained('orders')->cascadeOnDelete();
             $table->string('factureNumber')->unique();
-            $table->enum('type', ['STORE', 'INFLUENCER', 'ADMIN', 'SHIPPING', 'SHIPPING_EMP']);
+            $table->enum('type', ['STORE', 'ADMIN']);
             $table->decimal('amount', 10, 2);
             $table->enum('status', ['UNPAID', 'PENDING', 'PAID'])->default('UNPAID');
             $table->timestamps();

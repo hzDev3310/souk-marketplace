@@ -13,11 +13,8 @@ class User extends Authenticatable {
     protected $casts = ['isBlocked' => 'boolean'];
 
     public function client() { return $this->hasOne(Client::class); }
-    public function influencer() { return $this->hasOne(Influencer::class); }
     public function store() { return $this->hasOne(Store::class); }
     public function admin() { return $this->hasOne(Admin::class); }
-    public function shippingCompany() { return $this->hasOne(ShippingCompany::class); }
-    public function shippingEmp() { return $this->hasOne(ShippingEmp::class); }
     public function logs() { return $this->hasMany(Log::class); }
     public function comments() { return $this->hasMany(Comment::class); }
     public function ratings() { return $this->hasMany(Rating::class); }

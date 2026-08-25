@@ -287,7 +287,7 @@ const StoreOrders = () => {
                                                 size="sm"
                                                 variant="secondary"
                                                 className="h-10 rounded-2xl font-black text-[10px] uppercase gap-2 px-4"
-                                                onClick={() => setViewingOrder(order)}
+                                                onClick={() => navigate(`/dashboard/orders/${order.id}`)}
                                             >
                                                 <Eye className="w-4 h-4" />
                                                 View
@@ -380,7 +380,7 @@ const StoreOrders = () => {
                                                     size="sm"
                                                     variant="secondary"
                                                     className="h-9 rounded-xl font-bold text-xs"
-                                                    onClick={() => setViewingOrder(order)}
+                                                    onClick={() => navigate(`/dashboard/orders/${order.id}`)}
                                                 >
                                                     <Eye className="w-4 h-4 mr-2" />
                                                     View
@@ -494,11 +494,14 @@ const StoreOrders = () => {
                                                         <TableCell className="py-4 px-6">
                                                             <div className="flex items-center gap-4">
                                                                 <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden flex-shrink-0">
-                                                                    {item.product?.albums?.[0] ? (
-                                                                        <img src={item.product.albums[0].file} className="w-full h-full object-cover" alt="" />
-                                                                    ) : (
-                                                                        <img src="/storage/empty/empty.webp" className="w-full h-full object-cover" alt="" />
-                                                                    )}
+                                                                    <img
+                                                                        src={item.product?.albums?.find((album) => album?.file)?.file || item.product?.albums?.[0]?.file || item.product?.albums?.[0]?.imageUrl || item.product?.imageUrl || '/storage/empty/empty.webp'}
+                                                                        className="w-full h-full object-cover"
+                                                                        alt=""
+                                                                        onError={(e) => {
+                                                                            e.currentTarget.src = '/storage/empty/empty.webp';
+                                                                        }}
+                                                                    />
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
                                                                     <p className="font-bold text-sm text-foreground mb-1 truncate">{item.product?.name_fr || item.product?.name_en}</p>

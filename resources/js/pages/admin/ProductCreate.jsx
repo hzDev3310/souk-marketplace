@@ -4,7 +4,8 @@ import { useAuth } from '@/context/AuthContext';
 
 const ProductCreate = () => {
     const { user } = useAuth();
-    return <ProductForm mode="create" role={user?.role === 'store' ? 'store' : 'admin'} />;
+    const role = String(user?.role || '').toLowerCase() === 'store' ? 'store' : 'admin';
+    return <ProductForm mode="create" role={role} />;
 };
 
 export default ProductCreate;

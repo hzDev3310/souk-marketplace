@@ -13,14 +13,14 @@ class OrderController extends Controller
      */
     public function index()
     {
-        $orders = Order::with(["client.user", "influencer.user"])
+        $orders = Order::with(["client.user"])
             ->withCount('items')
             ->withCount(['items as confirmed_items_count' => function ($query) {
                 $query->where('status', 'confirme');
             }])
             ->orderBy("created_at", "desc")
             ->paginate(15);
-            
+
         return response()->json($orders);
     }
 
@@ -29,9 +29,9 @@ class OrderController extends Controller
      */
     public function show($id)
     {
-        $order = Order::with(["client.user", "influencer.user", "items.product.store", "factures", "driver.user"])
+        $order = Order::with(["client.user", "items.product.albums", "items.product.store", "factures"])
             ->findOrFail($id);
-            
+
         return response()->json($order);
     }
 
@@ -43,18 +43,16 @@ class OrderController extends Controller
         $order = Order::findOrFail($id);
 
         $validated = $request->validate([
-            "status" => "required|string|in:en_attente,confirme,imported_to_depot,en_livraison,livree,retournee",
-            "driver_id" => "nullable|exists:shipping_emps,id"
+            "status" => "required|string|in:en_attente,confirme,imported_to_depot,en_livraison,livree,retournee"
         ]);
 
         $order->update([
             'status' => Order::normalizeStatus($validated['status']) ?? $validated['status'],
-            'driver_id' => $validated['driver_id'] ?? $order->driver_id,
         ]);
 
         return response()->json([
             "message" => "Order updated successfully",
-            "order" => $order->fresh(['client.user', 'driver.user', 'items.product'])
+            "order" => $order->fresh(['client.user', 'items.product'])
         ]);
     }
 
@@ -115,7 +113,7 @@ class OrderController extends Controller
     public function getByClient($clientId)
     {
         $orders = Order::where('client_id', $clientId)
-            ->with(['items.product.albums', 'influencer.user', 'factures'])
+            ->with(['items.product.albums', 'items.product.store', 'factures', 'client.user'])
             ->orderBy('created_at', 'desc')
             ->get();
         

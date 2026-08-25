@@ -32,7 +32,7 @@ class StoreOrderController extends Controller
         ->with(['items' => function ($query) use ($store) {
             $query->whereHas('product', function ($q) use ($store) {
                 $q->where('store_id', $store->id);
-            })->with('product');
+            })->with('product.albums');
         }, 'client'])
         ->paginate(15);
 
@@ -85,7 +85,7 @@ class StoreOrderController extends Controller
             $query->whereHas('product', function ($q) use ($store) {
                 $q->where('store_id', $store->id);
             })->with('product.albums');
-        }, 'client']);
+        }, 'client', 'items.product.albums']);
 
         // Append store_id to each item for easier filtering on frontend
         if ($order->items) {

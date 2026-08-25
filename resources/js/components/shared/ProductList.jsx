@@ -45,8 +45,13 @@ const ProductList = ({ role = 'admin' }) => {
         try {
             const url = isAdmin ? '/admin/products' : '/store/products';
             const response = await api.get(url);
-            const data = response.data?.data || response.data || [];
-            setProducts(Array.isArray(data) ? data : []);
+            const payload = response.data?.data ?? response.data ?? [];
+            const list = Array.isArray(payload)
+                ? payload
+                : Array.isArray(payload?.data)
+                    ? payload.data
+                    : [];
+            setProducts(list);
         } catch (error) {
             console.error('Error fetching products:', error);
         } finally {
@@ -54,9 +59,9 @@ const ProductList = ({ role = 'admin' }) => {
         }
     };
 
-    const handleAdd = () => navigate(isAdmin ? '/dashboard/products/create' : '/dashboard/products/create');
+    const handleAdd = () => navigate('/dashboard/products/create');
 
-    const handleEdit = (product) => navigate(isAdmin ? `/dashboard/products/edit/${product.id}` : `/dashboard/products/edit/${product.id}`);
+    const handleEdit = (product) => navigate(`/dashboard/products/${product.id}/edit`);
 
     const handleToggleActive = async (product) => {
         try {

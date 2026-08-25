@@ -453,10 +453,10 @@ class PublicController extends Controller
                 if (!$product) continue;
                 $cartItems[] = [
                     'product'      => $product,
-                    'variant_id'   => $item['variant_id'],
+                    'variant_id'   => $item['variant_id'] ?? null,
                     'quantity'     => $item['quantity'],
-                    'variant_name' => $item['variant_name'],
-                    'variant_data' => $item['variant_data'],
+                    'variant_name' => $item['variant_name'] ?? null,
+                    'variant_data' => $item['variant_data'] ?? null,
                     'price'        => $product->customerPrice(),
                     'commission'   => $product->commissionAmount(),
                     'cart_key'     => $item['cart_key'],
@@ -478,9 +478,9 @@ class PublicController extends Controller
                     OrderItem::create([
                         'order_id'     => $order->id,
                         'product_id'   => $item['product']->id,
-                        'variant_id'   => $item['variant_id'],
-                        'variant_name' => $item['variant_name'],
-                        'variant_data' => $item['variant_data'],
+                        'variant_id'   => $item['variant_id'] ?? null,
+                        'variant_name' => $item['variant_name'] ?? null,
+                        'variant_data' => $item['variant_data'] ?? null,
                         'quantity'     => $item['quantity'],
                         'price'        => $item['price'],
                         'commission'   => $item['commission'],
@@ -508,10 +508,14 @@ class PublicController extends Controller
         $items = [];
         foreach ($rawCart as $key => $value) {
             $productId = $key;
+            $quantity = is_array($value) ? ($value['quantity'] ?? 1) : (int) $value;
             $items[] = [
                 'product_id'   => $productId,
-                'quantity'     => is_array($value) ? $value['quantity'] : (int) $value,
+                'quantity'     => max(1, (int) $quantity),
                 'cart_key'     => $key,
+                'variant_id'   => is_array($value) ? ($value['variant_id'] ?? null) : null,
+                'variant_name' => is_array($value) ? ($value['variant_name'] ?? null) : null,
+                'variant_data' => is_array($value) ? ($value['variant_data'] ?? null) : null,
             ];
         }
         return $items;

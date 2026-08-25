@@ -81,7 +81,8 @@ const FieldError = ({ error }) => (
 
 const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
     const isEdit = mode === 'edit';
-    const isStore = role === 'store';
+    const normalizedRole = String(role || '').toLowerCase();
+    const isStore = normalizedRole === 'store';
     const apiBase = isStore ? '/store/products' : '/admin/products';
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -135,6 +136,15 @@ const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
         }
     }, [productId]);
 
+    useEffect(() => {
+        if (isStore && user?.store?.id) {
+            setFormData(prev => ({
+                ...prev,
+                store_id: String(user.store.id),
+            }));
+        }
+    }, [isStore, user?.store?.id]);
+
     const fetchStores = async () => {
         try {
             const response = await api.get('/admin/users/stores/list');
@@ -147,7 +157,8 @@ const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
 
     const fetchCategories = async () => {
         try {
-            const response = await api.get(isStore ? '/categories' : '/admin/categories/all');
+            const endpoint = isStore ? '/store/categories' : '/admin/categories/all';
+            const response = await api.get(endpoint);
             const categoriesData = response.data?.data || response.data || [];
             setCategories(Array.isArray(categoriesData) ? categoriesData : []);
         } catch (error) {
@@ -309,6 +320,10 @@ const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
 
         const data = new FormData();
         Object.keys(formData).forEach(key => {
+            if (isStore && key === 'store_id') {
+                return;
+            }
+
             if (key === 'categories') {
                 data.append('categories', JSON.stringify(formData[key]));
             } else {
@@ -466,7 +481,7 @@ const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
                                             {t('admin.products.form.store') || 'Store'}
                                         </label>
                                         <div className="w-full h-12 px-4 rounded-xl bg-card border border-border/60 flex items-center font-bold text-sm">
-                                            {user?.store?.store_name_fr || user?.store?.name_fr || formData.store_id || '—'}
+                                            {user?.store?.name_fr || user?.store?.store_name_fr || user?.store?.name_en || user?.store?.id || '—'}
                                         </div>
                                     </div>
                                 )}
