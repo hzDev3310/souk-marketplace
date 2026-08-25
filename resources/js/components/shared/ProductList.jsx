@@ -6,7 +6,7 @@ import api from '@/lib/api';
 import AdminPageLayout from '@/components/shared/AdminPageLayout';
 import CardBox from '@/components/shared/CardBox';
 import Modal from '@/components/shared/Modal';
-import ProductViewModal from '@/components/shared/ProductViewModal';
+
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
@@ -335,10 +335,7 @@ const ProductList = ({ role = 'admin' }) => {
                 </CardBox>
             </div>
 
-            {/* View Modal */}
-            <Modal isOpen={!!viewingProduct} onClose={() => setViewingProduct(null)} title={t('admin.products.view.title') || 'Product Details'} size="xl">
-                {viewingProduct && <ProductViewModal product={viewingProduct} />}
-            </Modal>
+           
         </AdminPageLayout>
     );
 };

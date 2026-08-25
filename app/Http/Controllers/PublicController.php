@@ -258,10 +258,7 @@ class PublicController extends Controller
             if (!$product) continue;
             $cart[] = [
                 'product'      => $product,
-                'variant_id'   => $item['variant_id'],
                 'quantity'     => $item['quantity'],
-                'variant_name' => $item['variant_name'],
-                'variant_data' => $item['variant_data'],
                 'cart_key'     => $item['cart_key'],
             ];
         }
@@ -275,16 +272,10 @@ class PublicController extends Controller
     public function addToCart(Request $request)
     {
         $productId = $request->input('product_id');
-        $variantId = $request->input('variant_id');
         $quantity = $request->input('quantity', 1);
         
         $cart = session()->get('cart', []);
-        $key = $variantId ? "$productId:$variantId" : $productId;
-
-        // Variant support removed for public storefront: we ignore variant lookups
-        // and store only product-level items in cart. Keep variant fields null.
-        $variantName = null;
-        $variantData = null;
+        $key = $productId;
 
         if (isset($cart[$key]) && is_array($cart[$key])) {
             $cart[$key]['quantity'] += $quantity;
@@ -292,14 +283,10 @@ class PublicController extends Controller
             // Migrate legacy int format
             $cart[$key] = [
                 'quantity' => (int) $cart[$key] + $quantity,
-                'variant_name' => $variantName,
-                'variant_data' => $variantData,
             ];
         } else {
             $cart[$key] = [
                 'quantity' => $quantity,
-                'variant_name' => $variantName,
-                'variant_data' => $variantData,
             ];
         }
         
@@ -392,10 +379,7 @@ class PublicController extends Controller
             if (!$product) continue;
             $cart[] = [
                 'product'      => $product,
-                'variant_id'   => $item['variant_id'],
                 'quantity'     => $item['quantity'],
-                'variant_name' => $item['variant_name'],
-                'variant_data' => $item['variant_data'],
                 'price'        => $product->customerPrice(),
                 'commission'   => $product->commissionAmount(),
                 'cart_key'     => $item['cart_key'],
@@ -517,20 +501,16 @@ class PublicController extends Controller
     }
 
     /**
-     * Parse raw session cart → [{product_id, variant_id, quantity, variant_name, variant_data, cart_key}]
+     * Parse raw session cart → [{product_id, quantity, cart_key}]
      */
     private function parseRawCart(array $rawCart): array
     {
         $items = [];
         foreach ($rawCart as $key => $value) {
-            [$productId, $variantId] = array_pad(explode(':', $key, 2), 2, null);
-            if ($variantId === '') $variantId = null;
+            $productId = $key;
             $items[] = [
                 'product_id'   => $productId,
-                'variant_id'   => $variantId,
                 'quantity'     => is_array($value) ? $value['quantity'] : (int) $value,
-                'variant_name' => is_array($value) ? ($value['variant_name'] ?? null) : null,
-                'variant_data' => is_array($value) ? ($value['variant_data'] ?? null) : null,
                 'cart_key'     => $key,
             ];
         }

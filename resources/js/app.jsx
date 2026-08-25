@@ -23,7 +23,7 @@ import StoreCreate from './pages/admin/StoreCreate';
 import StoreEdit from './pages/admin/StoreEdit';
 import AdminClients from './pages/admin/Clients';
 import AdminClientOrders from './pages/admin/ClientOrders';
-import AdminShippingCompanies from './pages/admin/ShippingCompanies';
+
 // Influencers and ShippingEmployees pages removed
 import AdminCategories from './pages/admin/Categories';
 import CategoryCreate from './pages/admin/CategoryCreate';
@@ -32,7 +32,7 @@ import AdminProducts from './pages/admin/Products';
 import ProductCreate from './pages/admin/ProductCreate';
 import ProductEdit from './pages/admin/ProductEdit';
 import AdminOrders from './pages/admin/Orders';
-import PageEditor from './pages/admin/PageEditor';
+
 // Store pages
 import StoreProducts from './pages/store/Products';
 import StoreOrders from './pages/store/Orders';
@@ -100,7 +100,7 @@ const App = () => {
                         <Route path="stores/:id/edit" element={<StoreEdit />} />
                         <Route path="clients" element={<AdminClients />} />
                         <Route path="clients/:clientId/orders" element={<AdminClientOrders />} />
-                        <Route path="shipping-companies" element={<AdminShippingCompanies />} />
+                       
                         {/* Influencers and Shipping Employees pages removed */}
                         <Route path="categories" element={<AdminCategories />} />
                         <Route path="categories/create" element={<CategoryCreate />} />
@@ -111,7 +111,7 @@ const App = () => {
                         <Route path="products/:id/edit" element={<RoleBasedProductEdit />} />
                         <Route path="orders" element={<RoleBasedOrders />} />
                         <Route path="analytics" element={<div className="p-6 text-link">Analytics Page (Work in Progress)</div>} />
-                        <Route path="pages/:slug" element={<PageEditor />} />
+
                         <Route path="profile" element={<RoleBasedProfile />} />
                     </Route>
                 </Route>

@@ -21,7 +21,7 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
-        return $product->load('store', 'variants', 'albums');
+        return $product->load('store', 'albums');
     }
 
     public function store(Request $request)

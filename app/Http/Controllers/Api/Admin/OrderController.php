@@ -29,7 +29,7 @@ class OrderController extends Controller
      */
     public function show($id)
     {
-        $order = Order::with(["client.user", "influencer.user", "items.product.store", "items.variant", "factures", "driver.user"])
+        $order = Order::with(["client.user", "influencer.user", "items.product.store", "factures", "driver.user"])
             ->findOrFail($id);
             
         return response()->json($order);

@@ -6,13 +6,13 @@ export const SidebarContent = [
         name: "Dashboard",
         icon: "LayoutDashboard",
         url: "/dashboard",
-        roles: ['ADMIN', 'STORE', 'CLIENT'],
+        roles: ['ADMIN', 'STORE'],
       },
       {
         name: "Products",
         icon: "Package",
         url: "/dashboard/products",
-        roles: ['ADMIN', 'STORE', 'CLIENT'],
+        roles: ['ADMIN', 'STORE'],
       },
       {
         name: "Categories",
@@ -24,7 +24,7 @@ export const SidebarContent = [
         name: "Orders",
         icon: "ShoppingCart",
         url: "/dashboard/orders",
-        roles: ['ADMIN', 'STORE', 'CLIENT'],
+        roles: ['ADMIN', 'STORE'],
       },
     ],
   },
@@ -37,30 +37,14 @@ export const SidebarContent = [
         url: '/dashboard/stores',
         roles: ['ADMIN'],
       },
-     /* {
-        name: 'Influencers',
-        icon: 'Sparkles',
-        url: '/dashboard/influencers',
-        roles: ['ADMIN'],
-      },*/
+
       {
         name: 'Clients',
         icon: 'Users',
         url: '/dashboard/clients',
         roles: ['ADMIN'],
       },
-    /*  {
-        name: 'Shipping Companies',
-        icon: 'Truck',
-        url: '/dashboard/shipping-companies',
-        roles: ['ADMIN'],
-      },
-      {
-        name: 'Shipping Employees',
-        icon: 'UserCog',
-        url: '/dashboard/shipping-employees',
-        roles: ['ADMIN'],
-      },*/
+
     ],
   },
 
