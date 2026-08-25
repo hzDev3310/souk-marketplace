@@ -96,20 +96,6 @@ const Dashboard = () => {
           </p>
         </div>
 
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-3xl font-black text-foreground tracking-tight">
-              {t('sidebar.dashboard')}
-            </h1>
-            <Sparkles className="w-5 h-5 text-primary animate-pulse" />
-          </div>
-          <p className="text-muted-foreground font-medium">
-            {t('dashboard.welcome') || "Welcome back! Here's a summary of your performance."}
-          </p>
-        </div>
-
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-xl text-sm font-bold text-foreground hover:bg-muted transition-colors shadow-sm">
             <Calendar className="w-4 h-4 text-primary" />
@@ -121,21 +107,6 @@ const Dashboard = () => {
           </button>
         </div>
       </div>
-
-      {isProfileIncomplete && (
-        <Link to="/dashboard/profile">
-          <div className="flex items-center justify-between gap-3 rounded-2xl border border-yellow-200 bg-yellow-50/70 p-4 dark:border-yellow-800/60 dark:bg-yellow-950/20 hover:bg-yellow-100 transition-colors cursor-pointer">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-yellow-600 dark:text-yellow-500" />
-              <div>
-                <p className="text-sm font-bold text-yellow-900 dark:text-yellow-200">Complete your store profile</p>
-                <p className="mt-1 text-xs text-yellow-800 dark:text-yellow-300">Fill in the required store data (name, description, tax number, phone) to unlock all features.</p>
-              </div>
-            </div>
-            <ArrowRight className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
-          </div>
-        </Link>
-      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -263,9 +234,9 @@ const Dashboard = () => {
               Generate Full Report
             </Button>
           </CardBox>
-                    </div>
-                  </div>
-                </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

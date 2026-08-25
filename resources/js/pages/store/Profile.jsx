@@ -23,10 +23,6 @@ import {
 } from 'lucide-react';
 import { validateImageFile } from '@/utils/imageUploadValidation';
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 const initialAccountForm = {
     name: '',
     family_name: '',
