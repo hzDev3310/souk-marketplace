@@ -13,12 +13,14 @@ return Application::configure(basePath: dirname(__DIR__))
         then: function () {
             // Use `web` (session + CSRF) for all /api/* routes so cookie auth matches /api/me and /api/admin/*.
             // The default `api` group only gets sessions when Sanctum treats the request as stateful (Referer/Origin + domain match), which often fails in dev.
-            Route::middleware('web')
+            Route::middleware(['web'])
                 ->prefix('api')
                 ->group(base_path('routes/api.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->prepend([\App\Http\Middleware\SeparateSession::class]);
+
         $middleware->statefulApi();
 
         // CSRF is skipped for the API (cookie-auth + role middleware already protect it).

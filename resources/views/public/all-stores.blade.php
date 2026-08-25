@@ -14,7 +14,7 @@
     </div>
 
     <!-- Stores Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-16">
+    <div id="stores-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-16">
         @forelse($stores as $store)
             <x-boutique-card :store="$store" />
         @empty
@@ -27,8 +27,8 @@
         @endforelse
     </div>
 
-    <!-- Pagination -->
+    <!-- Pagination (server-side) -->
     <div class="mt-16 flex justify-center">
-        {{ $stores->links() }}
+        {{ $stores->appends(request()->query())->links() }}
     </div>
 @endsection

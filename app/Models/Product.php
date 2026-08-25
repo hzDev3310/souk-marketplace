@@ -15,6 +15,9 @@ class Product extends Model {
 
     protected $fillable = ['store_id', 'name_fr', 'name_ar', 'name_en', 'description_fr', 'description_ar', 'description_en', 'price', 'condition', 'stock', 'slug', 'promo', 'categories', 'isActive'];
     protected $casts = ['categories' => 'array', 'isActive' => 'boolean'];
+    protected $attributes = [
+        'condition' => 'NEW',
+    ];
 
     public function store() { return $this->belongsTo(Store::class); }
     public function variants() { return $this->hasMany(ProductVariant::class); }

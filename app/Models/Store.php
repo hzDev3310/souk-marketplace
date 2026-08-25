@@ -12,23 +12,4 @@ class Store extends Model {
 
     public function user() { return $this->belongsTo(User::class); }
     public function products() { return $this->hasMany(Product::class); }
-
-    /**
-     * The delivery zone covering the store's governorate (derived, not stored).
-     */
-    public function zone(): ?GeoZone
-    {
-        return GeoZone::zoneForGovernorate($this->governorate);
-    }
-
-    public function zoneLabel(): string
-    {
-        $zone = $this->zone();
-        return $zone ? $zone->getName() : __('website.zones.unassigned');
-    }
-
-    public function governorateLabel(): string
-    {
-        return GeoZone::governorateLabel($this->governorate);
-    }
 }

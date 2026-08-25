@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\Store;
 
 use App\Http\Controllers\Concerns\HandlesFileUploads;
 use App\Http\Controllers\Controller;
-use App\Models\GeoZone;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -52,19 +51,18 @@ class StoreProfileController extends Controller
 
         // Validate input
         $validator = Validator::make($request->all(), [
-            'name_fr' => 'required|string|max:255',
-            'name_ar' => 'required|string|max:255',
-            'name_en' => 'required|string|max:255',
-            'description_fr' => 'required|string',
-            'description_ar' => 'required|string',
-            'description_en' => 'required|string',
-            'storePhone' => 'required|string|max:20',
-            'address' => 'required|string|max:255',
-            'responsibleCin' => 'required|string|max:50',
-            'matriculeFiscale' => 'required|string|max:50',
-            'rib' => 'required|string|max:100',
-            'promo' => 'required|numeric|min:0|max:100',
-            'governorate' => 'nullable|in:' . implode(',', GeoZone::GOVERNORATES),
+            'name_fr' => 'nullable|string|max:255',
+            'name_ar' => 'nullable|string|max:255',
+            'name_en' => 'nullable|string|max:255',
+            'description_fr' => 'nullable|string',
+            'description_ar' => 'nullable|string',
+            'description_en' => 'nullable|string',
+            'storePhone' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:255',
+            'responsibleCin' => 'nullable|string|max:50',
+            'rib' => 'nullable|string|max:100',
+            'promo' => 'nullable|numeric|min:0|max:100',
+            'governorate' => 'nullable|string|max:50',
             'logo' => 'nullable|file|max:4096',
             'cover' => 'nullable|file|max:4096',
         ]);
@@ -74,14 +72,6 @@ class StoreProfileController extends Controller
                 'success' => false,
                 'message' => 'Validation failed',
                 'errors' => $validator->errors()
-            ], 422);
-        }
-
-        if ($request->has('governorate') && $request->governorate && !GeoZone::zoneForGovernorate($request->governorate)) {
-            return response()->json([
-                'success' => false,
-                'message' => __('store.profile.messages.noZoneForGovernorate'),
-                'errors' => ['governorate' => [__('store.profile.messages.noZoneForGovernorate')]]
             ], 422);
         }
 

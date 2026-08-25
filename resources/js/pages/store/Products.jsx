@@ -35,7 +35,7 @@ const StoreProducts = () => {
     const [quickEditData, setQuickEditData] = useState({});
 
     // Check if profile is incomplete
-    const isProfileIncomplete = !user?.store?.name_en || !user?.store?.name_fr || !user?.store?.name_ar || !user?.store?.matriculeFiscale || !user?.store?.storePhone;
+    const isProfileIncomplete = !user?.store?.name_en || !user?.store?.name_fr || !user?.store?.name_ar || !user?.store?.storePhone;
 
     // Redirect if profile incomplete
     useEffect(() => {

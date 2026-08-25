@@ -23,7 +23,6 @@ const DashboardLayout = () => {
     !user?.store?.name_en || 
     !user?.store?.name_fr || 
     !user?.store?.name_ar ||
-    !user?.store?.matriculeFiscale ||
     !user?.store?.storePhone
   );
 

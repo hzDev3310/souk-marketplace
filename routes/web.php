@@ -16,7 +16,7 @@ Route::get('/lang/{locale}', function ($locale) {
     return redirect()->back();
 })->name('lang.switch');
 
-Route::middleware('web')->group(function () {
+Route::middleware(['web'])->group(function () {
     // Public Pages (SEO Optimized)
     Route::get('/', [PublicController::class, 'index'])->name('home');
     Route::get('/p/{slug}', [PublicController::class, 'product'])->name('public.product');
@@ -56,9 +56,9 @@ Route::middleware('web')->group(function () {
     Route::get('/register', [PublicController::class, 'showRegister'])->name('register');
     Route::post('/register', [PublicController::class, 'register'])->name('public.register.submit');
     Route::post('/logout', [PublicController::class, 'logout'])->name('logout');
-
-    // SPA Dashboard (React) — catch-all, React handles auth client-side
-    Route::get('/dashboard/{any?}', function () {
-        return view('welcome');
-    })->where('any', '.*')->name('dashboard');
 });
+
+// SPA Dashboard (React) — catch-all, React handles auth client-side via /api/* routes
+Route::get('/dashboard/{any?}', function () {
+    return view('welcome');
+})->where('any', '.*')->name('dashboard');

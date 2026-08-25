@@ -21,11 +21,10 @@ import Dashboard from './pages/Dashboard';
 import AdminStores from './pages/admin/Stores';
 import StoreCreate from './pages/admin/StoreCreate';
 import StoreEdit from './pages/admin/StoreEdit';
-import AdminInfluencers from './pages/admin/Influencers';
 import AdminClients from './pages/admin/Clients';
 import AdminClientOrders from './pages/admin/ClientOrders';
 import AdminShippingCompanies from './pages/admin/ShippingCompanies';
-import AdminShippingEmployees from './pages/admin/ShippingEmployees';
+// Influencers and ShippingEmployees pages removed
 import AdminCategories from './pages/admin/Categories';
 import CategoryCreate from './pages/admin/CategoryCreate';
 import CategoryEdit from './pages/admin/CategoryEdit';
@@ -99,11 +98,10 @@ const App = () => {
                         <Route path="stores" element={<AdminStores />} />
                         <Route path="stores/create" element={<StoreCreate />} />
                         <Route path="stores/:id/edit" element={<StoreEdit />} />
-                        <Route path="influencers" element={<AdminInfluencers />} />
                         <Route path="clients" element={<AdminClients />} />
                         <Route path="clients/:clientId/orders" element={<AdminClientOrders />} />
                         <Route path="shipping-companies" element={<AdminShippingCompanies />} />
-                        <Route path="shipping-employees" element={<AdminShippingEmployees />} />
+                        {/* Influencers and Shipping Employees pages removed */}
                         <Route path="categories" element={<AdminCategories />} />
                         <Route path="categories/create" element={<CategoryCreate />} />
                         <Route path="categories/:categoryId" element={<AdminCategories />} />

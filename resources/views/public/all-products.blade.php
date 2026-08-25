@@ -241,7 +241,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/></svg>
                 </div>
                 <p class="text-muted-foreground font-bold uppercase tracking-widest text-xs">{{ __('website.noProductsFound') ?? 'No products found' }}</p>
-                <a href="{{ route('public.home') }}" class="inline-block px-8 py-4 bg-primary text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">{{ __('website.backHome') }}</a>
+                <a href="{{ route('home') }}" class="inline-block px-8 py-4 bg-primary text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">{{ __('website.backHome') }}</a>
             </div>
             @endif
         </div>

@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 
-const VALID_CONDITIONS = ['NEW', 'GOOD', 'USED', 'REFURBISHED'];
 
 const validateForm = (formData, imageFiles, fileErrors, { requireStore = true } = {}) => {
     const errs = {};
@@ -51,9 +50,7 @@ const validateForm = (formData, imageFiles, fileErrors, { requireStore = true } 
         errs.price = ['Please enter a valid price (0 or greater).'];
     }
 
-    if (!VALID_CONDITIONS.includes(formData.condition)) {
-        errs.condition = ['Please select a valid condition.'];
-    }
+    // Condition is fixed to NEW; no validation required here.
 
     if (formData.stock === '' || formData.stock === null || isNaN(Number(formData.stock)) || !Number.isInteger(Number(formData.stock)) || Number(formData.stock) < 0) {
         errs.stock = ['Please enter a valid stock quantity (non-negative integer).'];
@@ -107,6 +104,7 @@ const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
         description_ar: '',
         description_en: '',
         price: '',
+        // condition is always NEW
         condition: 'NEW',
         stock: '0',
         promo: '0',
@@ -434,18 +432,9 @@ const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
                                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                                         {t('admin.products.form.condition') || 'Condition'}
                                     </label>
-                                    <select
-                                        name="condition"
-                                        value={formData.condition}
-                                        onChange={handleChange}
-                                        className={`w-full h-12 px-4 rounded-xl bg-card border font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all ${errors.condition ? 'border-red-400' : 'border-border/60'}`}
-                                    >
-                                        <option value="NEW">{t('admin.products.form.condNew') || 'New'}</option>
-                                        <option value="GOOD">{t('admin.products.form.condGood') || 'Good'}</option>
-                                        <option value="USED">{t('admin.products.form.condUsed') || 'Used'}</option>
-                                        <option value="REFURBISHED">{t('admin.products.form.condRefurbished') || 'Refurbished'}</option>
-                                    </select>
-                                    <FieldError error={errors.condition} />
+                                    <div className="w-full h-12 px-4 rounded-xl bg-card border border-border/60 flex items-center font-bold text-sm">
+                                        {t('admin.products.form.condNew') || 'New'}
+                                    </div>
                                 </div>
                             </div>
                         </CardBox>

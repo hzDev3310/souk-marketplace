@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use App\Models\ProductVariant;
 use App\Models\Category;
 use App\Models\User;
 use App\Models\Client;
@@ -11,10 +10,10 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Page;
 use App\Models\ContactSetting;
-use App\Models\GeoZone;
+
 use App\Models\Store;
 use App\Services\ProductSemanticSearchService;
-use App\Services\VariantTreeService;
+// Product variants removed from public storefront logic.
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Hash;
@@ -26,10 +25,9 @@ class PublicController extends Controller
 {
     private function applyPublicStoreVisibility($query): void
     {
-        $query->where('isActive', true)
-            ->whereHas('user', function ($userQuery) {
-                $userQuery->where('isBlocked', false);
-            });
+        // Only require the store to be active. We removed the separate "isBlocked" list
+        // and now rely on the store's `isActive` flag for public visibility.
+        $query->where('isActive', true);
     }
 
     public function index()
@@ -101,16 +99,14 @@ class PublicController extends Controller
         return view('public.home', compact('topPromoProducts', 'maxDiscount', 'topCategories', 'topStores', 'recentProducts', 'categories'));
     }
 
-    public function product($slug, \App\Services\VariantTreeService $treeService)
+    public function product($slug)
     {
-        $product = Product::with(['store', 'albums', 'variants.albums'])
+        $product = Product::with(['store', 'albums'])
             ->whereHas('store', function ($query) {
                 $this->applyPublicStoreVisibility($query);
             })
             ->where('slug', $slug)
             ->firstOrFail();
-
-        $variantTree = $treeService->treeFor($product);
 
         $relatedProducts = Product::with(['store', 'albums'])
             ->whereHas('store', function ($query) {
@@ -121,7 +117,7 @@ class PublicController extends Controller
             ->limit(4)
             ->get();
 
-        return view('public.product', compact('product', 'variantTree', 'relatedProducts'));
+        return view('public.product', compact('product', 'relatedProducts'));
     }
 
     public function store($slug)
@@ -276,7 +272,7 @@ class PublicController extends Controller
         return view('public.cart', compact('cart', 'zoneGroups', 'categories'));
     }
 
-    public function addToCart(Request $request, VariantTreeService $treeService)
+    public function addToCart(Request $request)
     {
         $productId = $request->input('product_id');
         $variantId = $request->input('variant_id');
@@ -285,18 +281,10 @@ class PublicController extends Controller
         $cart = session()->get('cart', []);
         $key = $variantId ? "$productId:$variantId" : $productId;
 
-        // Snapshot the variant path at add-to-cart time so the order is
-        // independent of whether the store owner later deletes variants.
+        // Variant support removed for public storefront: we ignore variant lookups
+        // and store only product-level items in cart. Keep variant fields null.
         $variantName = null;
         $variantData = null;
-        if ($variantId) {
-            $leaf = ProductVariant::with('product')->find($variantId);
-            if ($leaf) {
-                $path = $treeService->pathFromLeaf($leaf);
-                $variantData = $path;
-                $variantName = collect($path)->pluck('attribute_value')->implode(' > ');
-            }
-        }
 
         if (isset($cart[$key]) && is_array($cart[$key])) {
             $cart[$key]['quantity'] += $quantity;
@@ -435,7 +423,7 @@ class PublicController extends Controller
         ]);
 
         $cart = session()->get('cart', []);
-        if(empty($cart)) return redirect()->route('public.home');
+        if(empty($cart)) return redirect()->route('home');
 
         return DB::transaction(function() use ($request, $cart) {
             if(Auth::check()) {
@@ -555,28 +543,23 @@ class PublicController extends Controller
      */
     private function groupCartByZone(array $cart): array
     {
-        $zoneMap = GeoZone::zoneMap();
         $groups = [];
         foreach ($cart as $item) {
             $product = $item['product'];
-            $zone = $zoneMap[$product->store->governorate] ?? null;
-            if (!$zone) continue; // store's governorate has no active delivery zone yet
-
-            $key = $zone->id;
             $price = $item['price'] ?? $product->customerPrice();
             $subtotal = $price * $item['quantity'];
 
-            if (!isset($groups[$key])) {
-                $groups[$key] = [
-                    'zone'  => $key,
-                    'label' => $zone->getName(),
+            if (!isset($groups['default'])) {
+                $groups['default'] = [
+                    'zone'  => 'default',
+                    'label' => __('website.zones.default') ?? 'Default',
                     'items' => [],
                     'total' => 0,
                 ];
             }
 
-            $groups[$key]['items'][] = $item;
-            $groups[$key]['total'] += $subtotal;
+            $groups['default']['items'][] = $item;
+            $groups['default']['total'] += $subtotal;
         }
         return array_values($groups);
     }
@@ -658,21 +641,13 @@ class PublicController extends Controller
 
     public function allStores()
     {
+        // Return all active, non-blocked stores, paginated. Removed the join-based order to
+        // avoid excluding stores that have no orders and to simplify the query.
         $stores = Store::where(function ($query) {
                 $this->applyPublicStoreVisibility($query);
             })
-            ->leftJoinSub(
-                OrderItem::select('order_items.id')
-                    ->join('products', 'order_items.product_id', '=', 'products.id')
-                    ->select('products.store_id', DB::raw('COUNT(order_items.id) as order_count'))
-                    ->groupBy('products.store_id'),
-                'store_orders',
-                'stores.id',
-                '=',
-                'store_orders.store_id'
-            )
             ->with('products')
-            ->orderByDesc(DB::raw('COALESCE(store_orders.order_count, 0)'))
+            ->latest()
             ->paginate(12);
 
         return view('public.all-stores', compact('stores'));

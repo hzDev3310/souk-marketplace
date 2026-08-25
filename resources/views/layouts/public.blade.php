@@ -26,10 +26,12 @@
             'secondary_color' => '#f43f5e',
             'radius' => '28px'
         ]);
-        $websiteName = setting('website_name', 'Souk AI');
-        $websiteLogo = setting('website_logo');
-        $footerAbout = setting('footer_about_' . app()->getLocale(), __('website.footer.aboutText'));
-        $contactAddress = setting('contact_address_' . app()->getLocale(), setting('contact_address_en', 'Tunis, Tunisia'));
+
+        // Static/public-facing site values (avoid dynamic settings)
+        $websiteName = 'Souk AI';
+        $websiteLogo = null;
+        $footerAbout = __('website.footer.aboutText');
+        $contactAddress = 'Tunis, Tunisia';
     @endphp
 
     <style>
@@ -164,15 +166,9 @@
                 <h4 class="font-black text-xs uppercase tracking-[0.2em] mb-8 text-foreground">
                     {{ __('website.footer.contactInfo') }}</h4>
                 <div class="space-y-4 text-sm font-bold text-muted-foreground">
-                    <p>{{ setting('contact_email', 'support@soukai.com') }}</p>
-                    <p>{{ setting('contact_phone', '+216 00 000 000') }}</p>
+                    <p>support@soukai.com</p>
+                    <p>+216 00 000 000</p>
                     <p>{{ $contactAddress }}</p>
-                    @if(setting('contact_location_url'))
-                        <a href="{{ setting('contact_location_url') }}" target="_blank" rel="noopener noreferrer"
-                            class="inline-flex items-center text-primary hover:text-primaryemphasis transition-colors">
-                            {{ __('website.footer.viewLocation') }}
-                        </a>
-                    @endif
                 </div>
             </div>
         </div>

@@ -23,7 +23,7 @@ import { Link } from 'react-router-dom';
 const Dashboard = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const isProfileIncomplete = user?.role === 'STORE' && user?.store && (!user?.store?.name_en || !user?.store?.name_fr || !user?.store?.name_ar || !user?.store?.matriculeFiscale || !user?.store?.storePhone);
+  const isProfileIncomplete = user?.role === 'STORE' && user?.store && (!user?.store?.name_en || !user?.store?.name_fr || !user?.store?.name_ar || !user?.store?.storePhone);
 
   const stats = [
     {

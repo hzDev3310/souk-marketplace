@@ -1,10 +1,10 @@
-@extends('layouts.public', ['title' => setting('terms_title_'.app()->getLocale(), __('website.pages.termsTitle'))])
+@extends('layouts.public', ['title' => __('website.pages.termsTitle')])
 
 @section('content')
 @php
     $locale = app()->getLocale();
-    $title = setting('terms_title_'.$locale, __('website.pages.termsTitle'));
-    $content = setting('terms_content_'.$locale, __('website.pages.termsFallback'));
+    $title = __('website.pages.termsTitle');
+    $content = __('website.pages.termsFallback');
 @endphp
 
 <section class="max-w-5xl mx-auto">

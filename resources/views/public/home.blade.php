@@ -29,7 +29,7 @@
                     onerror="this.onerror=null; this.style.display='none';">
             @endforeach
         @else
-            <img src="{{ image_url(setting('hero_image'), 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop') }}"
+            <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop"
                 class="absolute inset-0 w-full h-full object-cover"
                 onerror="this.onerror=null; this.src='https://media.wallmantra.com/product/original/product_placeholder.webp';">
         @endif
@@ -42,11 +42,11 @@
             </div>
 
             <h1 class="text-4xl sm:text-5xl md:text-7xl font-black text-white leading-[1.05] tracking-tight">
-                {!! preg_replace('/\*(.*?)\*/', '<span class="text-secondary">$1</span>', setting('hero_title_' . app()->getLocale(), __('website.heroTitle'))) !!}
+                {!! preg_replace('/\*(.*?)\*/', '<span class="text-secondary">$1</span>', __('website.heroTitle')) !!}
             </h1>
 
             <p class="text-sm sm:text-lg text-white/80 font-medium max-w-xl leading-relaxed">
-                {{ setting('hero_subtitle_' . app()->getLocale(), __('website.heroSubtitle')) }}
+                {{ __('website.heroSubtitle') }}
             </p>
 
             <div class="flex flex-col sm:flex-row flex-wrap gap-4 pt-4 w-full sm:w-auto">

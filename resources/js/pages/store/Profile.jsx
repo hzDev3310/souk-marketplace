@@ -41,7 +41,6 @@ const initialStoreForm = {
     storePhone: '',
     address: '',
     responsibleCin: '',
-    matriculeFiscale: '',
     rib: '',
     promo: '0',
 };
@@ -63,7 +62,7 @@ const StoreProfile = () => {
 
     const [formData, setFormData] = useState(initialStoreForm);
     const storeId = user?.store?.id;
-    const isProfileIncomplete = Boolean(user?.store) && (!user?.store?.name_en || !user?.store?.name_fr || !user?.store?.name_ar || !user?.store?.matriculeFiscale || !user?.store?.storePhone);
+    const isProfileIncomplete = false;
 
     useEffect(() => {
         if (!user) return;
@@ -98,7 +97,6 @@ const StoreProfile = () => {
                     storePhone: storeData.storePhone || '',
                     address: storeData.address || '',
                     responsibleCin: storeData.responsibleCin || '',
-                    matriculeFiscale: storeData.matriculeFiscale || '',
                     rib: storeData.rib || '',
                     promo: String(storeData.promo ?? '0'),
                 });
@@ -332,9 +330,9 @@ const StoreProfile = () => {
                 )}
 
                 <div className="space-y-6">
-                    <CardBox className="w-full rounded-[30px] border border-border/60 bg-card/80 p-4 md:p-6">
-                        <div className="flex flex-col gap-5 lg:flex-row lg:items-end">
-                            <div className="relative w-full lg:w-[220px]">
+                    <CardBox className="w-full rounded-[30px] border border-border/60 bg-card/80 p-4 md:p-6 !pb-[40px]">
+                        <div className="flex flex-col gap-5 lg:flex-row lg:items-end overflow-y-visible">
+                            <div className="relative w-full lg:w-[500   px]">
                                 <div className="relative h-44 w-full overflow-hidden rounded-[28px] border border-border/70 bg-gradient-to-br from-primary/20 via-secondary/10 to-background">
                                     {coverPreview ? (
                                         <img src={coverPreview} alt="store cover" className="h-full w-full object-cover" />
@@ -491,10 +489,6 @@ const StoreProfile = () => {
                             <div className="space-y-2">
                                 <Label htmlFor="responsibleCin">Responsible CIN</Label>
                                 <Input id="responsibleCin" name="responsibleCin" value={formData.responsibleCin} onChange={handleInputChange} className="h-12 rounded-2xl text-base" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="matriculeFiscale">Tax number</Label>
-                                <Input id="matriculeFiscale" name="matriculeFiscale" value={formData.matriculeFiscale} onChange={handleInputChange} className="h-12 rounded-2xl text-base" />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="rib">RIB</Label>

@@ -3,61 +3,37 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Support\Facades\DB;
 
-class GeoZone extends Model {
-    use HasUuids;
-
-    const GOVERNORATES = [
-        'TUNIS', 'ARIANA', 'BEN_AROUS', 'MANOUBA',
-        'NABEUL', 'ZAGHOUAN', 'BIZERTE', 'BEJA',
-        'JENDOUBA', 'KEF', 'SILIANA', 'SOUSSE',
-        'MONASTIR', 'MAHDIA', 'SFAX', 'KAIROUAN',
-        'KASSERINE', 'SIDI_BOUZID', 'GABES', 'MEDENINE',
-        'TATAOUINE', 'GAFSA', 'TOZEUR', 'KEBILI',
-    ];
-
-    protected $fillable = ['name_en', 'name_fr', 'name_ar', 'governorates', 'isActive'];
-    protected $casts = ['governorates' => 'array', 'isActive' => 'boolean'];
-
-    public function getName(?string $locale = null): string
-    {
-        $locale = $locale ?? app()->getLocale();
-        $name = $this->{'name_' . $locale} ?? null;
-        return $name ?: ($this->name_en ?: $this->name_fr ?: $this->name_ar);
-    }
-
-    public static function governorateLabel(?string $governorate): string
-    {
-        if (!$governorate) return '';
-        $key = 'website.governorates.' . $governorate;
-        $translated = __($key);
-        return ($translated === $key) ? $governorate : $translated;
-    }
+class GeoZone extends Model
+{
+    protected $table = 'geo_zones';
+    public $timestamps = false;
 
     /**
-     * Active zones indexed by governorate code (cached for the request).
+     * Return a map of governorate => GeoZone instance.
+     * If the table doesn't exist or an error occurs, return an empty array.
      */
     public static function zoneMap(): array
     {
-        static $map = null;
-        if ($map === null) {
+        try {
+            $rows = DB::table((new static)->getTable())->get();
             $map = [];
-            foreach (self::where('isActive', true)->get() as $zone) {
-                foreach ($zone->governorates as $gov) {
-                    $map[$gov] = $zone;
+            foreach ($rows as $r) {
+                $zone = new static((array) $r);
+                // Expecting a `governorate` key on the row; skip if missing
+                if (isset($r->governorate)) {
+                    $map[$r->governorate] = $zone;
                 }
             }
+            return $map;
+        } catch (\Throwable $e) {
+            return [];
         }
-        return $map;
     }
 
-    /**
-     * Resolve the active zone that covers a governorate, if any.
-     */
-    public static function zoneForGovernorate(?string $governorate): ?self
+    public function getName(): string
     {
-        if (!$governorate) return null;
-        return self::zoneMap()[$governorate] ?? null;
+        return $this->name ?? ($this->label ?? '');
     }
 }

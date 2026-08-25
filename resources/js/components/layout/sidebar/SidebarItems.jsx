@@ -6,7 +6,7 @@ export const SidebarContent = [
         name: "Dashboard",
         icon: "LayoutDashboard",
         url: "/dashboard",
-        roles: ['ADMIN', 'STORE', 'INFLUENCER', 'CLIENT'],
+        roles: ['ADMIN', 'STORE', 'CLIENT'],
       },
       {
         name: "Products",
@@ -63,26 +63,7 @@ export const SidebarContent = [
       },*/
     ],
   },
-  {
-    heading: 'System',
-    children: [
-      {
-  
-        name: 'Profile',
-        icon: 'UserCircle',
-        url: '/dashboard/profile',
-        roles: ['ADMIN', 'STORE', 'INFLUENCER', 'CLIENT'],
-      },
-  
-      {
-        name: 'Profile',
-        icon: 'UserCircle',
-        url: '/dashboard/profile',
-        roles: ['ADMIN', 'STORE', 'INFLUENCER', 'CLIENT'],
-      },
-    
-    ],
-  },
+
  
 ];
 

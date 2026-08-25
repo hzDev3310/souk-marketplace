@@ -4,10 +4,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PublicSemanticSearchController;
 use App\Http\Controllers\Api\Admin\CategoryController;
 use App\Http\Controllers\Api\Admin\EmployeeController;
-use App\Http\Controllers\Api\Admin\InfluencerController;
 use App\Http\Controllers\Api\Admin\OrderController;
 use App\Http\Controllers\Api\Admin\ProductController;
-use App\Http\Controllers\Api\Admin\ShippingCompanyController;
+// Influencer and ShippingCompany controllers removed
 use App\Http\Controllers\Api\Admin\StoreController;
 use App\Http\Controllers\Api\Admin\PageContentController;
 use App\Http\Controllers\Api\Admin\UserManagementController;
@@ -51,8 +50,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::post('orders/{order}/items/{item}/status', [OrderController::class, 'updateItemStatus']);
     Route::delete('orders/{order}/items/{item}', [OrderController::class, 'removeItem']);
 
-    Route::apiResource('influencers', InfluencerController::class);
-    Route::apiResource('shipping-companies', ShippingCompanyController::class);
+    // Influencers and shipping companies endpoints removed
     Route::apiResource('employees', EmployeeController::class);
 
     // Settings Management

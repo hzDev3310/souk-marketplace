@@ -32,10 +32,8 @@ class PublicSemanticSearchController extends Controller
 
         $baseQuery = Product::query()
             ->whereHas('store', function ($query) {
-                $query->where('isActive', true)
-                    ->whereHas('user', function ($userQuery) {
-                        $userQuery->where('isBlocked', false);
-                    });
+                // Only consider active stores for public semantic search.
+                $query->where('isActive', true);
             })
             ->whereBetween('price', [$minPrice, $maxPrice]);
 

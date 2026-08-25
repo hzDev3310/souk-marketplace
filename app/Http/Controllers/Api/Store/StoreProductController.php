@@ -59,7 +59,6 @@ class StoreProductController extends Controller
             'description_ar' => 'nullable|string',
             'description_en' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'condition' => 'required|in:NEW,GOOD,USED,REFURBISHED',
             'stock' => 'required|integer|min:0',
             'promo' => 'nullable|numeric|min:0|max:100',
             'categories' => 'nullable|json',
@@ -84,7 +83,7 @@ class StoreProductController extends Controller
             'description_ar' => $request->description_ar,
             'description_en' => $request->description_en,
             'price' => $request->price,
-            'condition' => $request->condition,
+            'condition' => 'NEW',
             'stock' => $request->stock,
             'promo' => $request->promo ?? 0,
             'categories' => $request->categories ? json_decode($request->categories) : [],
@@ -155,7 +154,6 @@ class StoreProductController extends Controller
             'description_ar' => 'nullable|string',
             'description_en' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'condition' => 'required|in:NEW,GOOD,USED,REFURBISHED',
             'stock' => 'required|integer|min:0',
             'promo' => 'nullable|numeric|min:0|max:100',
             'categories' => 'nullable|json',
@@ -172,7 +170,10 @@ class StoreProductController extends Controller
             ], 422);
         }
 
-        $product->update($request->except('images'));
+        $data = $request->except('images');
+        // Force condition to NEW
+        $data['condition'] = 'NEW';
+        $product->update($data);
 
         // Delete albums not in keep_images
         $keepImages = json_decode($request->input('keep_images', '[]'), true);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useNotification } from '@/context/NotificationContext';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ const StoreProductCreate = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { addNotification } = useNotification();
     const [loading, setLoading] = useState(false);
     const [fetchingData, setFetchingData] = useState(true);
     const [categories, setCategories] = useState([]);
@@ -26,7 +28,6 @@ const StoreProductCreate = () => {
         description_ar: '',
         description_en: '',
         price: '',
-        condition: 'NEW',
         stock: '0',
         promo: '0',
         categories: []
@@ -90,27 +91,44 @@ const StoreProductCreate = () => {
     };
 
     const handleAutoTranslate = async () => {
-        setTranslating(true);
+        const fieldsToTranslate = {};
+        Object.entries(formData).forEach(([key, value]) => {
+            if ((key.startsWith('name_') || key.startsWith('description_')) && value && String(value).trim() !== '') {
+                fieldsToTranslate[key] = value;
+            }
+        });
+
+        if (Object.keys(fieldsToTranslate).length === 0) {
+            addNotification('error', 'Write at least one name or description before enhancing.');
+            return;
+        }
+
         try {
-            const fieldsToTranslate = {
-                name_fr: formData.name_fr,
-                name_ar: formData.name_ar,
-                name_en: formData.name_en,
-                description_fr: formData.description_fr,
-                description_ar: formData.description_ar,
-                description_en: formData.description_en,
-            };
-            
+            setTranslating(true);
             const response = await api.post('/translate/autofill', { fields: fieldsToTranslate });
             if (response.data?.success) {
+                const translatedFields = Object.fromEntries(
+                    Object.entries(response.data.data || {})
+                        .map(([key, value]) => {
+                            const normalizedKey = key === 'name_es' ? 'name_ar' : key === 'description_es' ? 'description_ar' : key;
+                            return [normalizedKey, value];
+                        })
+                        .filter(([key, value]) => (
+                            (key === 'name_en' || key === 'name_fr' || key === 'name_ar' || key === 'description_en' || key === 'description_fr' || key === 'description_ar')
+                            && typeof value === 'string'
+                        ))
+                );
+
                 setFormData(prev => ({
                     ...prev,
-                    ...response.data.data
+                    ...translatedFields,
                 }));
+                addNotification('success', 'AI enhancement is ready.');
+            } else {
+                addNotification('error', response.data?.error || 'AI enhancement failed. Please try again.');
             }
         } catch (error) {
-            console.error('Translation error:', error);
-            alert(t('store.products.messages.translationError') || 'Failed to auto-translate. Please check API key and try again.');
+            addNotification('error', error.response?.data?.error || error.response?.data?.message || 'AI enhancement failed. Please try again.');
         } finally {
             setTranslating(false);
         }
@@ -192,29 +210,14 @@ const StoreProductCreate = () => {
                             type="button"
                             onClick={handleAutoTranslate}
                             disabled={translating}
-                            className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 border border-purple-200 dark:border-purple-500/30 gap-2 rounded-xl h-10 px-4 font-bold transition-all shadow-sm"
+                            className="h-11 rounded-2xl border border-purple-300 bg-purple-500/10 px-5 font-bold text-purple-600 hover:bg-purple-500/20 dark:border-purple-500/30 dark:text-purple-300 gap-2"
                         >
                             {translating ? <Activity className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-                            {t('store.products.form.autoTranslate') || '✨ Auto Translate Missing Fields'}
+                            {t('store.products.form.autoTranslate') || 'AI enhance & translate'}
                         </Button>
                     </div>
 
-                    {/* Condition */}
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                            {t('store.products.form.condition') || 'Condition'}
-                        </label>
-                        <select
-                            name="condition"
-                            value={formData.condition}
-                            onChange={handleChange}
-                            className="w-full md:w-1/3 h-12 px-4 rounded-xl bg-card border border-border/60 font-bold text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                        >
-                            <option value="NEW">{t('store.products.form.condNew') || 'New'}</option>
-                            <option value="USED">{t('store.products.form.condUsed') || 'Used'}</option>
-                            <option value="REFURBISHED">{t('store.products.form.condRefurbished') || 'Refurbished'}</option>
-                        </select>
-                    </div>
+                    {/* Condition is fixed to New */}
 
                     {/* Product Names */}
                     <div className="space-y-3">
