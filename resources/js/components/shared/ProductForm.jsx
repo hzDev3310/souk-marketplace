@@ -12,7 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import { validateImageFile } from '@/utils/imageUploadValidation';
 import {
     Package, Store, Tags, Box, Image as ImageIcon, Activity, Plus, X,
-    Check, Layers, DollarSign, CloudUpload, GitBranch
+    Check, Layers, DollarSign, CloudUpload, GitBranch, Wand2
 } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 
@@ -104,8 +104,7 @@ const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
         description_ar: '',
         description_en: '',
         price: '',
-        // condition is always NEW
-        condition: 'NEW',
+        // condition removed
         stock: '0',
         promo: '0',
         categories: []
@@ -117,6 +116,7 @@ const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
     const [fileErrors, setFileErrors] = useState([]);
     const [dragActive, setDragActive] = useState(false);
     const fileInputRef = useRef(null);
+    const [translating, setTranslating] = useState(false);
 
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [savingCategory, setSavingCategory] = useState(false);
@@ -169,7 +169,6 @@ const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
                     description_ar: product.description_ar || '',
                     description_en: product.description_en || '',
                     price: product.price ?? '',
-                    condition: product.condition || 'NEW',
                     stock: product.stock ?? '0',
                     promo: product.promo ?? '0',
                     categories: Array.isArray(product.categories)
@@ -358,6 +357,50 @@ const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
         }
     };
 
+    const handleAutoTranslate = async () => {
+        const fieldsToTranslate = {};
+        Object.entries(formData).forEach(([key, value]) => {
+            if ((key.startsWith('name_') || key.startsWith('description_')) && value && String(value).trim() !== '') {
+                fieldsToTranslate[key] = value;
+            }
+        });
+
+        if (Object.keys(fieldsToTranslate).length === 0) {
+            showToast('Write at least one name or description before enhancing.', 'error');
+            return;
+        }
+
+        try {
+            setTranslating(true);
+            const response = await api.post('/translate/autofill', { fields: fieldsToTranslate });
+            if (response.data?.success) {
+                const translatedFields = Object.fromEntries(
+                    Object.entries(response.data.data || {})
+                        .map(([key, value]) => {
+                            const normalizedKey = key === 'name_es' ? 'name_ar' : key === 'description_es' ? 'description_ar' : key;
+                            return [normalizedKey, value];
+                        })
+                        .filter(([key, value]) => (
+                            (key === 'name_en' || key === 'name_fr' || key === 'name_ar' || key === 'description_en' || key === 'description_fr' || key === 'description_ar')
+                            && typeof value === 'string'
+                        ))
+                );
+
+                setFormData(prev => ({
+                    ...prev,
+                    ...translatedFields,
+                }));
+                showToast('AI enhancement is ready.', 'success');
+            } else {
+                showToast(response.data?.error || 'AI enhancement failed. Please try again.', 'error');
+            }
+        } catch (error) {
+            showToast(error.response?.data?.error || error.response?.data?.message || 'AI enhancement failed. Please try again.', 'error');
+        } finally {
+            setTranslating(false);
+        }
+    };
+
     const handleCancel = () => {
         navigate('/dashboard/products');
     };
@@ -427,25 +470,27 @@ const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
                                         </div>
                                     </div>
                                 )}
-
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                                        {t('admin.products.form.condition') || 'Condition'}
-                                    </label>
-                                    <div className="w-full h-12 px-4 rounded-xl bg-card border border-border/60 flex items-center font-bold text-sm">
-                                        {t('admin.products.form.condNew') || 'New'}
-                                    </div>
-                                </div>
                             </div>
                         </CardBox>
 
                         {/* Card 2: Product Names */}
                         <CardBox className="p-6 sm:p-8 rounded-[32px]">
-                            <SectionHeader
-                                icon={Tags}
-                                title={`${t('admin.products.form.productNames') || 'Product Names'} *`}
-                                subtitle={t('admin.products.form.namesSubtitle') || 'Names in all supported languages'}
-                            />
+                            <div className="flex items-center justify-between mb-4">
+                                <SectionHeader
+                                    icon={Tags}
+                                    title={`${t('admin.products.form.productNames') || 'Product Names'} *`}
+                                    subtitle={t('admin.products.form.namesSubtitle') || 'Names in all supported languages'}
+                                />
+                                <Button
+                                    type="button"
+                                    onClick={handleAutoTranslate}
+                                    disabled={translating}
+                                    className="h-11 rounded-2xl border border-purple-300 bg-purple-500/10 px-5 font-bold text-purple-600 hover:bg-purple-500/20 dark:border-purple-500/30 dark:text-purple-300 gap-2 shrink-0"
+                                >
+                                    {translating ? <Activity className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                                    {t('store.products.form.autoTranslate') || 'AI enhance & translate'}
+                                </Button>
+                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-1">
                                     <Input

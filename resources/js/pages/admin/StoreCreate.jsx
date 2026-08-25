@@ -3,15 +3,17 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import CardBox from '@/components/shared/CardBox';
-import GovernorateSelect from '@/components/shared/GovernorateSelect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Store, ArrowLeft, Save } from 'lucide-react';
+import { useNotification } from '@/context/NotificationContext';
+import { Store, ArrowLeft, Save, Activity, Wand2 } from 'lucide-react';
 
 const StoreCreate = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { showToast } = useNotification();
   const [saving, setSaving] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     family_name: '',
@@ -24,8 +26,47 @@ const StoreCreate = () => {
     address: '',
     matriculeFiscale: '',
     rib: '',
-    governorate: '',
   });
+
+  const handleAutoTranslate = async () => {
+    const fieldsToTranslate = {};
+    Object.entries(formData).forEach(([key, value]) => {
+      if ((key.startsWith('name_') || key.startsWith('description_')) && value && String(value).trim() !== '') {
+        fieldsToTranslate[key] = value;
+      }
+    });
+
+    if (Object.keys(fieldsToTranslate).length === 0) {
+      showToast('Write at least one name before enhancing.', 'error');
+      return;
+    }
+
+    try {
+      setTranslating(true);
+      const response = await api.post('/translate/autofill', { fields: fieldsToTranslate });
+      if (response.data?.success) {
+        const translatedFields = Object.fromEntries(
+          Object.entries(response.data.data || {})
+            .map(([key, value]) => {
+              const normalizedKey = key === 'name_es' ? 'name_ar' : key === 'description_es' ? 'description_ar' : key;
+              return [normalizedKey, value];
+            })
+            .filter(([key, value]) => (
+              (key === 'name_en' || key === 'name_fr' || key === 'name_ar')
+              && typeof value === 'string'
+            ))
+        );
+        setFormData(prev => ({ ...prev, ...translatedFields }));
+        showToast('AI enhancement is ready.', 'success');
+      } else {
+        showToast(response.data?.error || 'AI enhancement failed.', 'error');
+      }
+    } catch (error) {
+      showToast(error.response?.data?.error || 'AI enhancement failed.', 'error');
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -141,9 +182,20 @@ const StoreCreate = () => {
 
             {/* Store Info */}
             <div className="space-y-4">
-              <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground border-b border-border/50 pb-2">
-                Store Information
-              </h3>
+              <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+                  Store Information
+                </h3>
+                <Button
+                  type="button"
+                  onClick={handleAutoTranslate}
+                  disabled={translating}
+                  className="h-11 rounded-2xl border border-purple-300 bg-purple-500/10 px-5 font-bold text-purple-600 hover:bg-purple-500/20 dark:border-purple-500/30 dark:text-purple-300 gap-2"
+                >
+                  {translating ? <Activity className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                  {t('store.products.form.autoTranslate') || 'AI enhance & translate'}
+                </Button>
+              </div>
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
@@ -225,15 +277,6 @@ const StoreCreate = () => {
                     className="h-12 bg-muted/30 border-border/50 rounded-xl"
                   />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                  {t('admin.stores.form.governorate')}
-                </label>
-                <GovernorateSelect
-                  value={formData.governorate}
-                  onChange={(value) => handleChange('governorate', value)}
-                />
               </div>
             </div>
 

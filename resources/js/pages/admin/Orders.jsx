@@ -529,9 +529,6 @@ const Orders = () => {
                                                                     </div>
                                                                     <div className="text-start">
                                                                         <p className="font-bold text-sm leading-tight">{item.product?.name_fr}</p>
-                                                                        {item.variant_name && (
-                                                                            <p className="text-[10px] font-bold text-primary">{item.variant_name}</p>
-                                                                        )}
                                                                         <div className="flex items-center gap-2 mt-1">
                                                                             <span className={`inline-flex items-center px-2 py-1 rounded-md text-[9px] font-black ${item.status === 'confirme' ? 'bg-emerald-500/10 text-emerald-500' : item.status === 'annule' ? 'bg-rose-500/10 text-rose-500' : 'bg-amber-500/10 text-amber-500'}`}>
                                                                                 {String(item.status || 'unknown').toUpperCase()}

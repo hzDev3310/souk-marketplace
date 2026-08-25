@@ -7,7 +7,88 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        // Roles (1-to-1 mapped with Users)
+        // 1. Core Authentication & Session
+        Schema::create('users', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->string('family_name');
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->enum('role', ['CLIENT', 'INFLUENCER', 'STORE', 'ADMIN', 'SHIPPING_COMPANY', 'SHIPPING_EMP']);
+            $table->boolean('isBlocked')->default(false);
+            $table->rememberToken();
+            $table->timestamps();
+        });
+
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignUuid('user_id')->nullable()->index();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->longText('payload');
+            $table->integer('last_activity')->index();
+        });
+
+        Schema::create('dashboard_sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignUuid('user_id')->nullable()->index();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->longText('payload');
+            $table->integer('last_activity')->index();
+        });
+
+        Schema::create('personal_access_tokens', function (Blueprint $table) {
+            $table->id();
+            $table->uuidMorphs('tokenable');
+            $table->string('name');
+            $table->string('token', 64)->unique();
+            $table->text('abilities')->nullable();
+            $table->timestamp('last_used_at')->nullable();
+            $table->timestamp('expires_at')->nullable();
+            $table->timestamps();
+        });
+
+        // 2. Settings & System
+        Schema::create('settings', function (Blueprint $table) {
+            $table->id();
+            $table->string('key')->unique();
+            $table->text('value')->nullable();
+            $table->string('type')->default('text');
+            $table->string('group')->default('general');
+            $table->timestamps();
+        });
+
+        Schema::create('cache', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->mediumText('value');
+            $table->integer('expiration')->index();
+        });
+
+        Schema::create('cache_locks', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->string('owner');
+            $table->integer('expiration')->index();
+        });
+
+        Schema::create('jobs', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->string('queue')->index();
+            $table->longText('payload');
+            $table->unsignedTinyInteger('attempts');
+            $table->unsignedInteger('reserved_at')->nullable();
+            $table->unsignedInteger('available_at');
+            $table->unsignedInteger('created_at');
+        });
+
+        // 3. Profiles
         Schema::create('clients', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->unique()->constrained('users')->cascadeOnDelete();
@@ -85,7 +166,7 @@ return new class extends Migration {
         Schema::create('shipping_emps', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->unique()->constrained('users')->cascadeOnDelete();
-            $table->string('pdp')->nullable(); 
+            $table->string('pdp')->nullable();
             $table->string('phone')->nullable();
             $table->string('address')->nullable();
             $table->string('cin')->nullable();
@@ -93,7 +174,7 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-        // Catalog 
+        // 4. Catalog
         Schema::create('categories', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('parent_id')->nullable()->constrained('categories')->nullOnDelete();
@@ -102,7 +183,6 @@ return new class extends Migration {
             $table->string('name_en');
             $table->string('slug')->unique();
             $table->string('icon')->nullable();
-            $table->string('logo')->nullable();
             $table->string('cover')->nullable();
             $table->boolean('isActive')->default(true);
             $table->timestamps();
@@ -118,10 +198,10 @@ return new class extends Migration {
             $table->text('description_ar')->nullable();
             $table->text('description_en')->nullable();
             $table->decimal('price', 10, 2);
-            $table->enum('condition', ['NEW', 'GOOD', 'USED']);
             $table->integer('stock')->default(0);
             $table->string('slug')->unique();
             $table->decimal('promo', 5, 2)->default(0);
+            $table->boolean('isActive')->default(true);
             $table->json('categories')->nullable();
             $table->timestamps();
         });
@@ -132,16 +212,6 @@ return new class extends Migration {
             $table->primary(['category_id', 'product_id']);
         });
 
-        Schema::create('product_variants', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('product_id')->constrained('products')->cascadeOnDelete();
-            $table->string('variant_name'); 
-            $table->string('sku')->unique();
-            $table->decimal('price', 10, 2)->nullable(); 
-            $table->integer('stock')->default(0);
-            $table->timestamps();
-        });
-
         Schema::create('product_albums', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('product_id')->constrained('products')->cascadeOnDelete();
@@ -150,13 +220,25 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-        // Sales & Finances
+        Schema::create('product_search_embeddings', function (Blueprint $table) {
+            $table->id();
+            $table->foreignUuid('product_id')->unique()->constrained('products')->cascadeOnDelete();
+            $table->string('content_hash', 64);
+            $table->string('model');
+            $table->unsignedInteger('dimensions')->nullable();
+            $table->longText('embedding');
+            $table->timestamps();
+        });
+
+        // 5. Orders & Finances
         Schema::create('orders', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->string('order_number')->unique()->nullable()->index();
             $table->foreignUuid('client_id')->constrained('clients');
             $table->foreignUuid('influencer_id')->nullable()->constrained('influencers')->nullOnDelete();
-            $table->enum('status', ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'])->default('PENDING');
+            $table->string('status')->default('PENDING');
             $table->decimal('totalAmount', 10, 2);
+            $table->foreignUuid('driver_id')->nullable()->constrained('shipping_emps')->nullOnDelete();
             $table->timestamps();
         });
 
@@ -164,9 +246,10 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->foreignUuid('order_id')->constrained('orders')->cascadeOnDelete();
             $table->foreignUuid('product_id')->constrained('products');
-            $table->foreignUuid('variant_id')->nullable()->constrained('product_variants')->nullOnDelete();
             $table->integer('quantity');
             $table->decimal('price', 10, 2);
+            $table->decimal('commission', 10, 2)->default(0);
+            $table->string('status')->default('PENDING');
             $table->timestamps();
         });
 
@@ -180,7 +263,43 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-        // Support & Moderation
+        // 6. CMS & Support
+        Schema::create('pages', function (Blueprint $table) {
+            $table->id();
+            $table->string('slug')->unique();
+            $table->string('title_en')->nullable();
+            $table->string('title_fr')->nullable();
+            $table->string('title_ar')->nullable();
+            $table->string('subtitle_en')->nullable();
+            $table->string('subtitle_fr')->nullable();
+            $table->string('subtitle_ar')->nullable();
+            $table->text('content_en')->nullable();
+            $table->text('content_fr')->nullable();
+            $table->text('content_ar')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('contact_settings', function (Blueprint $table) {
+            $table->id();
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('address_en')->nullable();
+            $table->string('address_fr')->nullable();
+            $table->string('address_ar')->nullable();
+            $table->text('map_embed_url')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('page_images', function (Blueprint $table) {
+            $table->id();
+            $table->string('imageable_type');
+            $table->unsignedBigInteger('imageable_id');
+            $table->string('image_path');
+            $table->integer('sort_order')->default(0);
+            $table->timestamps();
+            $table->index(['imageable_type', 'imageable_id']);
+        });
+
         Schema::create('logs', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
@@ -207,7 +326,7 @@ return new class extends Migration {
             $table->uuid('reportedTargetId');
             $table->enum('reportedTargetRole', ['CLIENT', 'INFLUENCER', 'STORE', 'ADMIN', 'SHIPPING_COMPANY', 'SHIPPING_EMP']);
             $table->text('description');
-            $table->string('status')->default('PENDING'); 
+            $table->string('status')->default('PENDING');
             $table->timestamps();
         });
 
@@ -236,6 +355,8 @@ return new class extends Migration {
             $table->tinyInteger('rating');
             $table->timestamps();
         });
+
+
     }
 
     public function down(): void
@@ -249,8 +370,8 @@ return new class extends Migration {
         Schema::dropIfExists('factures');
         Schema::dropIfExists('order_items');
         Schema::dropIfExists('orders');
+        Schema::dropIfExists('product_search_embeddings');
         Schema::dropIfExists('product_albums');
-        Schema::dropIfExists('product_variants');
         Schema::dropIfExists('category_product');
         Schema::dropIfExists('products');
         Schema::dropIfExists('categories');
@@ -260,5 +381,17 @@ return new class extends Migration {
         Schema::dropIfExists('stores');
         Schema::dropIfExists('influencers');
         Schema::dropIfExists('clients');
+        Schema::dropIfExists('page_images');
+        Schema::dropIfExists('contact_settings');
+        Schema::dropIfExists('pages');
+        Schema::dropIfExists('settings');
+        Schema::dropIfExists('personal_access_tokens');
+        Schema::dropIfExists('dashboard_sessions');
+        Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
+        Schema::dropIfExists('jobs');
+        Schema::dropIfExists('cache_locks');
+        Schema::dropIfExists('cache');
     }
 };

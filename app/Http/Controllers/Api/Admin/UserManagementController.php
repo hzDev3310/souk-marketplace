@@ -171,7 +171,6 @@ class UserManagementController extends Controller
             'address' => 'nullable|string',
             'matriculeFiscale' => 'nullable|string',
             'rib' => 'nullable|string',
-            'governorate' => 'nullable|string|max:50',
         ]);
         
         if ($validator->fails()) {
@@ -196,7 +195,6 @@ class UserManagementController extends Controller
             'address' => 'nullable|string',
             'matriculeFiscale' => 'nullable|string',
             'rib' => 'nullable|string',
-            'governorate' => 'nullable|string|max:50',
             'isActive' => 'nullable|boolean',
         ]);
         

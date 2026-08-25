@@ -216,9 +216,6 @@ const ClientOrders = () => {
                                                                         </div>
                                                                         <div className="flex-1 min-w-0">
                                                                             <p className="font-bold text-sm text-foreground truncate">{item.product?.name_fr || item.product?.name_en || 'Product'}</p>
-                                                                            {item.variant_name && (
-                                                                                <p className="text-[10px] font-bold text-primary">{item.variant_name}</p>
-                                                                            )}
                                                                             <p className="text-[10px] font-bold text-muted-foreground uppercase">
                                                                                 {item.price.toFixed(2)} TND × {item.quantity}
                                                                             </p>

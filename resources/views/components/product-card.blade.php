@@ -103,24 +103,11 @@
             </a>
         @endif
 
-        {{-- Product Name with Rating --}}
-        <div class="flex items-start justify-between gap-2">
-            <h3
-                class="font-bold text-foreground text-[10px] md:text-sm line-clamp-2 flex-1 group-hover:text-primary transition-colors duration-300">
-                {{ $product->{'name_' . app()->getLocale()} }}
-            </h3>
-            {{-- Rating Stars --}}
-            <div class="flex items-center gap-1 shrink-0 mt-0.5">
-                <div class="flex">
-                    @for($i = 1; $i <= 5; $i++)
-                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="{{ $i <= 4 ? '#F59E0B' : '#E5E7EB' }}" stroke="none" class="{{ $i <= 4 ? 'text-amber-400' : 'text-gray-300' }}">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                        </svg>
-                    @endfor
-                </div>
-                <span class="text-[8px] font-bold text-muted-foreground">(24)</span>
-            </div>
-        </div>
+        {{-- Product Name --}}
+        <h3
+            class="font-bold text-foreground text-[10px] md:text-sm line-clamp-2 group-hover:text-primary transition-colors duration-300">
+            {{ $product->{'name_' . app()->getLocale()} }}
+        </h3>
 
         {{-- Price Section --}}
         <div class="flex items-end justify-between pt-2 border-t border-border/40">

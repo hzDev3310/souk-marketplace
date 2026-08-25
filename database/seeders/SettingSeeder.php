@@ -2,14 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class SettingSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $settings = [
@@ -73,7 +70,10 @@ class SettingSeeder extends Seeder
         ];
 
         foreach ($settings as $setting) {
-            \App\Models\Setting::updateOrCreate(['key' => $setting['key']], $setting);
+            DB::table('settings')->updateOrInsert(
+                ['key' => $setting['key']],
+                array_merge($setting, ['created_at' => now(), 'updated_at' => now()])
+            );
         }
     }
 }

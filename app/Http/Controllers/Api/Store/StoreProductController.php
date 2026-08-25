@@ -83,7 +83,6 @@ class StoreProductController extends Controller
             'description_ar' => $request->description_ar,
             'description_en' => $request->description_en,
             'price' => $request->price,
-            'condition' => 'NEW',
             'stock' => $request->stock,
             'promo' => $request->promo ?? 0,
             'categories' => $request->categories ? json_decode($request->categories) : [],
@@ -171,8 +170,6 @@ class StoreProductController extends Controller
         }
 
         $data = $request->except('images');
-        // Force condition to NEW
-        $data['condition'] = 'NEW';
         $product->update($data);
 
         // Delete albums not in keep_images

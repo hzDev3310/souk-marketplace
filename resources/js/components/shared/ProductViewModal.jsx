@@ -7,16 +7,6 @@ import {
     Layers, CheckCircle2, AlertTriangle, PackageX, TrendingDown, BadgePercent
 } from 'lucide-react';
 
-const conditionStyle = (condition) => {
-    switch (condition) {
-        case 'NEW': return { label: 'New', color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' };
-        case 'GOOD': return { label: 'Good', color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/30' };
-        case 'USED': return { label: 'Used', color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/30' };
-        case 'REFURBISHED': return { label: 'Refurbished', color: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/30' };
-        default: return { label: condition || '—', color: 'text-muted-foreground', bg: 'bg-muted/20', border: 'border-border/40' };
-    }
-};
-
 const stockBadge = (stock) => {
     if (stock <= 0) return { label: 'Out of Stock', color: 'text-rose-500', bg: 'bg-rose-500/10', border: 'border-rose-500/30', icon: PackageX };
     if (stock < 5) return { label: 'Low Stock', color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/30', icon: AlertTriangle };
@@ -48,7 +38,6 @@ const ProductViewModal = ({ product, apiBase, showStore = false, showPromo = fal
 
     if (!product) return null;
 
-    const cond = conditionStyle(product.condition);
     const stock = stockBadge(Number(product.stock));
     const StockIcon = stock.icon;
     const displayPrice = (product.price * 1.1).toFixed(2);
@@ -66,12 +55,6 @@ const ProductViewModal = ({ product, apiBase, showStore = false, showPromo = fal
                             alt={product.name_fr || product.name_en}
                             className="w-full h-full object-cover"
                         />
-                        <div className="absolute top-4 start-4 flex items-center gap-2">
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md text-[10px] font-black uppercase border ${cond.bg} ${cond.color} ${cond.border}`}>
-                                <Tag size={11} />
-                                {cond.label}
-                            </span>
-                        </div>
                         <div className="absolute bottom-4 end-4">
                             <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md text-[10px] font-black uppercase border ${stock.bg} ${stock.color} ${stock.border}`}>
                                 <StockIcon size={11} />
@@ -146,12 +129,6 @@ const ProductViewModal = ({ product, apiBase, showStore = false, showPromo = fal
                             icon={Package}
                             label={t('admin.products.view.stock') || 'Stock'}
                             value={product.stock}
-                        />
-                        <StatCard
-                            icon={Layers}
-                            label={t('admin.products.view.condition') || 'Condition'}
-                            value={cond.label}
-                            iconClass="text-blue-500"
                         />
                         {showStore && (
                             <StatCard

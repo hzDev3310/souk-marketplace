@@ -62,7 +62,6 @@ class StoreProfileController extends Controller
             'responsibleCin' => 'nullable|string|max:50',
             'rib' => 'nullable|string|max:100',
             'promo' => 'nullable|numeric|min:0|max:100',
-            'governorate' => 'nullable|string|max:50',
             'logo' => 'nullable|file|max:4096',
             'cover' => 'nullable|file|max:4096',
         ]);
