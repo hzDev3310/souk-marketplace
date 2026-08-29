@@ -4,14 +4,13 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PublicSemanticSearchController;
 use App\Http\Controllers\Api\Admin\CategoryController;
 use App\Http\Controllers\Api\Admin\EmployeeController;
-use App\Http\Controllers\Api\Admin\OrderController;
-use App\Http\Controllers\Api\Admin\ProductController;
+use App\Http\Controllers\Shared\DashboardController;
+use App\Http\Controllers\Shared\OrderController;
+use App\Http\Controllers\Shared\ProductController;
 // Influencer and ShippingCompany controllers removed
 use App\Http\Controllers\Api\Admin\StoreController;
 use App\Http\Controllers\Api\Admin\PageContentController;
 use App\Http\Controllers\Api\Admin\UserManagementController;
-use App\Http\Controllers\Api\Store\StoreOrderController;
-use App\Http\Controllers\Api\Store\StoreProductController;
 use App\Http\Controllers\Api\Store\StoreProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +33,7 @@ Route::get('/categories/{category}', [CategoryController::class, 'show']);
 
 // Admin Routes
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
+    Route::get('dashboard', [DashboardController::class, 'index']);
     Route::get('users', function () {
         return \App\Models\User::all(['id', 'name']);
     });
@@ -41,14 +41,16 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('stores', StoreController::class);
     Route::apiResource('products', ProductController::class);
+    Route::patch('products/{product}/toggle-active', [ProductController::class, 'toggleActive']);
 
     // Order Management
-    Route::apiResource('orders', OrderController::class);
+    Route::get('orders/by-number/{orderNumber}', [OrderController::class, 'showByNumber']);
     Route::get('orders/client/{clientId}', [OrderController::class, 'getByClient']);
     Route::post('orders/{id}/verify', [OrderController::class, 'verify']);
     Route::post('orders/{id}/confirm-manually', [OrderController::class, 'confirmManually']);
     Route::post('orders/{order}/items/{item}/status', [OrderController::class, 'updateItemStatus']);
     Route::delete('orders/{order}/items/{item}', [OrderController::class, 'removeItem']);
+    Route::apiResource('orders', OrderController::class);
 
     // Influencers and shipping companies endpoints removed
     Route::apiResource('employees', EmployeeController::class);
@@ -112,18 +114,21 @@ Route::middleware(['auth:sanctum', 'role:shipping_company'])->prefix('shipping')
 
 // Store Routes
 Route::middleware(['auth:sanctum', 'role:store'])->prefix('store')->group(function () {
+    Route::get('dashboard', [DashboardController::class, 'index']);
     Route::get('/profile', [StoreProfileController::class, 'profile']);
     Route::post('/profile', [StoreProfileController::class, 'updateProfile']);
     Route::get('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'list']);
 
-    Route::get('/products', [StoreProductController::class, 'index']);
-    Route::post('/products', [StoreProductController::class, 'store']);
-    Route::get('/products/{product}', [StoreProductController::class, 'show']);
-    Route::put('/products/{product}', [StoreProductController::class, 'update']);
-    Route::delete('/products/{product}', [StoreProductController::class, 'destroy']);
+    Route::get('/products', [ProductController::class, 'index']);
+    Route::post('/products', [ProductController::class, 'store']);
+    Route::get('/products/{product}', [ProductController::class, 'show']);
+    Route::put('/products/{product}', [ProductController::class, 'update']);
+    Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+    Route::patch('/products/{product}/toggle-active', [ProductController::class, 'toggleActive']);
 
-    Route::get('/orders', [StoreOrderController::class, 'index']);
-    Route::get('/orders/{order}', [StoreOrderController::class, 'show']);
-    Route::post('/orders/{order}/status', [StoreOrderController::class, 'updateStatus']); // Legacy
-    Route::post('/orders/{order}/items/{item}/status', [StoreOrderController::class, 'updateItemStatus']);
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/by-number/{orderNumber}', [OrderController::class, 'showByNumber']);
+    Route::get('/orders/{order}', [OrderController::class, 'show']);
+    Route::post('/orders/{order}/status', [OrderController::class, 'updateStatus']); // Legacy
+    Route::post('/orders/{order}/items/{item}/status', [OrderController::class, 'updateItemStatus']);
 });

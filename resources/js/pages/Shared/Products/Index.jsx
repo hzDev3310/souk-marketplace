@@ -5,7 +5,6 @@ import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
 import AdminPageLayout from '@/components/shared/AdminPageLayout';
 import CardBox from '@/components/shared/CardBox';
-import Modal from '@/components/shared/Modal';
 
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -19,16 +18,15 @@ import {
     Activity, Eye, Package, ChevronDown, ChevronUp
 } from 'lucide-react';
 
-const ProductList = ({ role = 'admin' }) => {
+const ProductList = () => {
     const { t } = useTranslation();
     const { user } = useAuth();
     const navigate = useNavigate();
-    const isAdmin = role === 'admin';
+    const isAdmin = user?.role === 'ADMIN';
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
-    const [viewingProduct, setViewingProduct] = useState(null);
     const [expandedCardId, setExpandedCardId] = useState(null);
     const [quickEditData, setQuickEditData] = useState({});
 
@@ -74,6 +72,7 @@ const ProductList = ({ role = 'admin' }) => {
     };
 
     const handleDelete = async (product) => {
+        if (Number(product.orders_count || 0) > 0) return;
         if (!confirm(t('admin.products.messages.confirmDelete') || 'Are you sure you want to delete this product?')) return;
         try {
             const url = isAdmin ? `/admin/products/${product.id}` : `/store/products/${product.id}`;
@@ -233,17 +232,17 @@ const ProductList = ({ role = 'admin' }) => {
                                             {expandedCardId === product.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                         </Button>
                                     )}
-                                    <Button size="iconsm" variant="soft" rounded="xl" color="info" onClick={() => setViewingProduct(product)}>
+                                    <Button size="iconsm" variant="soft" rounded="xl" color="info" onClick={() => navigate(`/dashboard/products/${product.id}`)}>
                                         <Eye size={18} strokeWidth={2.5} />
                                     </Button>
                                     <Button size="iconsm" variant="soft" rounded="xl" color="warning" onClick={() => handleEdit(product)}>
                                         <Pencil size={18} strokeWidth={2.5} />
                                     </Button>
-                                    {!isAdmin && (
-                                        <Button size="iconsm" variant="soft" rounded="xl" color="error" onClick={() => handleDelete(product)}>
+                                    <Tooltip content={Number(product.orders_count || 0) > 0 ? 'Products included in orders cannot be deleted' : (t('common.actions.delete') || 'Delete')}>
+                                        <Button size="iconsm" variant="soft" rounded="xl" color="error" disabled={Number(product.orders_count || 0) > 0} onClick={() => handleDelete(product)}>
                                             <Trash2 size={18} strokeWidth={2.5} />
                                         </Button>
-                                    )}
+                                    </Tooltip>
                                 </div>
                             </div>
                         ))
@@ -314,7 +313,7 @@ const ProductList = ({ role = 'admin' }) => {
                                         <TableCell className="py-4 px-6 text-end">
                                             <div className="flex justify-end gap-2">
                                                 <Tooltip content={t('common.actions.view')}>
-                                                    <Button size="iconsm" variant="soft" rounded="xl" color="info" onClick={() => setViewingProduct(product)}>
+                                                    <Button size="iconsm" variant="soft" rounded="xl" color="info" onClick={() => navigate(`/dashboard/products/${product.id}`)}>
                                                         <Eye size={18} />
                                                     </Button>
                                                 </Tooltip>
@@ -323,13 +322,11 @@ const ProductList = ({ role = 'admin' }) => {
                                                         <Pencil size={18} />
                                                     </Button>
                                                 </Tooltip>
-                                                {!isAdmin && (
-                                                    <Tooltip content={t('common.actions.delete')}>
-                                                        <Button size="iconsm" variant="soft" rounded="xl" color="error" onClick={() => handleDelete(product)}>
-                                                            <Trash2 size={18} />
-                                                        </Button>
-                                                    </Tooltip>
-                                                )}
+                                                <Tooltip content={Number(product.orders_count || 0) > 0 ? 'Products included in orders cannot be deleted' : (t('common.actions.delete') || 'Delete')}>
+                                                    <Button size="iconsm" variant="soft" rounded="xl" color="error" disabled={Number(product.orders_count || 0) > 0} onClick={() => handleDelete(product)}>
+                                                        <Trash2 size={18} />
+                                                    </Button>
+                                                </Tooltip>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -339,8 +336,6 @@ const ProductList = ({ role = 'admin' }) => {
                     </Table>
                 </CardBox>
             </div>
-
-           
         </AdminPageLayout>
     );
 };

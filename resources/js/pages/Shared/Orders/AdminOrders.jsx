@@ -173,11 +173,12 @@ const Orders = () => {
                 return { label: "Livrée", color: "text-emerald-500", bg: "bg-emerald-500/10", icon: Package };
             case "retournee":
             case "returned":
+                return { label: "Retournée", color: "text-rose-500", bg: "bg-rose-500/10", icon: XCircle };
             case "annule":
             case "cancelled":
-                return { label: "Retournée", color: "text-rose-500", bg: "bg-rose-500/10", icon: XCircle };
+                return { label: "Annulé", color: "text-red-600", bg: "bg-red-600/10", icon: XCircle };
             default:
-                return { label: status || "Inconnu", color: "text-muted-foreground", bg: "bg-muted/10", icon: Activity };
+                return { label: status || "Non défini", color: "text-muted-foreground", bg: "bg-muted/10", icon: Clock };
         }
     };
 
@@ -261,12 +262,12 @@ const Orders = () => {
                                             <span className="text-[10px] text-muted-foreground">TND</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Button
-                                                size="iconsm" variant="soft" rounded="xl" color="info"
-                                                onClick={() => navigate(`/dashboard/orders/${order.id}`)}
-                                            >
-                                                <Eye size={18} />
-                                            </Button>
+                                                <Button
+                                                    size="iconsm" variant="soft" rounded="xl" color="info"
+                                                    onClick={() => navigate(`/dashboard/orders/${order.order_number || order.id}`)}
+                                                >
+                                                    <Eye size={18} />
+                                                </Button>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button size="icon" variant="ghost" rounded="2xl" className="bg-muted/50 hover:bg-muted">
@@ -274,14 +275,7 @@ const Orders = () => {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="bg-card border-border/50 rounded-xl">
-                                                    {[
-                                                        "en_attente",
-                                                        "confirme",
-                                                        "imported_to_depot",
-                                                        "en_livraison",
-                                                        "livree",
-                                                        "retournee",
-                                                    ].map(s => (
+                                                    {["confirme", "imported_to_depot", "en_livraison", "livree", "retournee", "annule"].map(s => (
                                                         <DropdownMenuItem
                                                             key={s}
                                                             onClick={() => updateStatus(order.id, s)}
@@ -359,12 +353,12 @@ const Orders = () => {
                                         </TableCell>
                                         <TableCell className="py-4 px-6 text-end">
                                             <div className="flex justify-end gap-2">
-                                                <Button 
-                                                    size="iconsm" 
-                                                    variant="soft" 
+                                                <Button
+                                                    size="iconsm"
+                                                    variant="soft"
                                                     rounded="xl"
                                                     color="info"
-                                                    onClick={() => navigate(`/dashboard/orders/${order.id}`)}
+                                                    onClick={() => navigate(`/dashboard/orders/${order.order_number || order.id}`)}
                                                 >
                                                     <Eye size={18} />
                                                 </Button>
@@ -376,14 +370,7 @@ const Orders = () => {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end" className="bg-card border-border/50 rounded-xl">
-                                                        {[
-                                                            "en_attente",
-                                                            "confirme",
-                                                            "imported_to_depot",
-                                                            "en_livraison",
-                                                            "livree",
-                                                            "retournee",
-                                                        ].map(s => (
+                                                        {["confirme", "imported_to_depot", "en_livraison", "livree", "retournee", "annule"].map(s => (
                                                             <DropdownMenuItem 
                                                                 key={s} 
                                                                 onClick={() => updateStatus(order.id, s)}
@@ -436,10 +423,11 @@ const Orders = () => {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="rounded-xl border-border/50 bg-background/95 backdrop-blur-xl">
-                                    <DropdownMenuItem onClick={() => updateStatus(viewingOrder.id, 'imported_to_depot')} className="font-bold text-[10px] uppercase">IMPORTÉ AU DÉPÔT</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => updateStatus(viewingOrder.id, 'en_livraison')} className="font-bold text-[10px] uppercase">EN LIVRAISON</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => updateStatus(viewingOrder.id, 'livree')} className="font-bold text-[10px] uppercase">LIVRÉE</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => updateStatus(viewingOrder.id, 'retournee')} className="font-bold text-[10px] uppercase">RETOURNÉE</DropdownMenuItem>
+                                    {["confirme", "imported_to_depot", "en_livraison", "livree", "retournee", "annule"].map(s => (
+                                        <DropdownMenuItem key={s} onClick={() => updateStatus(viewingOrder.id, s)} className="font-bold text-[10px] uppercase">
+                                            {getStatusConfig(s).label}
+                                        </DropdownMenuItem>
+                                    ))}
                                 </DropdownMenuContent>
                             </DropdownMenu>
                             <Button onClick={() => setViewingOrder(null)} rounded="xl" className="font-black bg-muted text-foreground hover:bg-muted/80">

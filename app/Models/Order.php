@@ -15,6 +15,7 @@ class Order extends Model {
         'en_livraison',
         'livree',
         'retournee',
+        'annule',
     ];
 
     public static function boot()
@@ -54,7 +55,8 @@ class Order extends Model {
             'delivered' => 'livree',
             'returned' => 'retournee',
             'retournee' => 'retournee',
-            'annule' => 'retournee',
+            'cancelled' => 'annule',
+            'annule' => 'annule',
         ];
 
         return $map[$status] ?? $status;

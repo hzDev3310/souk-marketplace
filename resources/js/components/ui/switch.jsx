@@ -13,25 +13,26 @@ const Switch = React.forwardRef(({
 }, ref) => {
     const colors = {
         primary: {
-            track: 'bg-gradient-to-r from-primary to-primary/80 shadow-[0_0_12px_rgba(var(--primary-rgb,99,102,241),0.4)]',
-            glow: 'bg-primary/20',
-            inner: 'bg-gradient-to-r from-primary/90 to-primary/70',
-            dot: 'bg-primary/30',
+            track: 'bg-gradient-to-r from-primary to-primary/80',
+            glow: 'bg-primary/30',
+            thumbShadow: 'shadow-[0_2px_6px_rgba(0,0,0,0.22)]',
+            dot: 'bg-primary',
         },
         success: {
-            track: 'bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.4)]',
-            glow: 'bg-emerald-500/20',
-            inner: 'bg-gradient-to-r from-emerald-500/90 to-emerald-400/80',
-            dot: 'bg-emerald-500/30',
+            track: 'bg-gradient-to-r from-emerald-500 to-emerald-400',
+            glow: 'bg-emerald-500/30',
+            thumbShadow: 'shadow-[0_2px_6px_rgba(16,185,129,0.35)]',
+            dot: 'bg-emerald-500',
         },
     };
 
     const c = colors[color] || colors.primary;
 
+    // Knob size (square) fitted to the track's inner height (h-* minus p-1).
     const sizes = {
-        sm: { track: 'w-9 h-5', thumb: 'w-3.5 h-3.5', translate: 16, padding: 3 },
-        default: { track: 'w-12 h-7', thumb: 'w-5 h-5', translate: 20, padding: 4 },
-        lg: { track: 'w-14 h-8', thumb: 'w-6 h-6', translate: 22, padding: 4 },
+        sm: { track: 'w-9 h-5', knob: 12 },
+        default: { track: 'w-12 h-7', knob: 20 },
+        lg: { track: 'w-14 h-8', knob: 24 },
     };
 
     const s = sizes[size] || sizes.default;
@@ -46,11 +47,11 @@ const Switch = React.forwardRef(({
             disabled={disabled}
             onClick={() => !disabled && onCheckedChange?.(!checked)}
             className={cn(
-                'relative inline-flex shrink-0 cursor-pointer items-center rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                'group relative inline-flex shrink-0 cursor-pointer items-center overflow-hidden rounded-full p-1 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                 s.track,
                 checked
                     ? c.track
-                    : 'bg-muted/60 border border-border/60',
+                    : 'bg-muted-foreground/15',
                 disabled && 'opacity-40 cursor-not-allowed',
                 className
             )}
@@ -58,41 +59,30 @@ const Switch = React.forwardRef(({
         >
             {/* Glow effect when active */}
             {checked && (
-                <div className={`absolute inset-0 rounded-full blur-sm animate-in fade-in duration-200 ${c.glow}`} />
+                <div className={`pointer-events-none absolute inset-0 rounded-full blur-[6px] ${c.glow}`} />
             )}
 
-            {/* Track inner highlight */}
-            <div className={cn(
-                'absolute inset-[1px] rounded-full transition-all duration-300',
-                checked ? c.inner : 'bg-muted/40'
-            )} />
-
-            {/* Thumb */}
-            <div
+            {/* Knob: animated via logical margin-inline-start (RTL-safe), kept inside the track. */}
+            <span
                 className={cn(
-                    'relative z-10 rounded-full shadow-md transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]',
-                    s.thumb,
-                    checked
-                        ? 'bg-white shadow-[0_1px_4px_rgba(0,0,0,0.2)]'
-                        : 'bg-white dark:bg-foreground/80 shadow-[0_1px_3px_rgba(0,0,0,0.15)]'
+                    'relative z-10 flex items-center justify-center rounded-full bg-white transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]',
+                    checked ? c.thumbShadow : 'shadow-sm'
                 )}
                 style={{
-                    marginLeft: s.padding,
-                    transform: `translateX(${checked ? s.translate : 0}px) scale(${checked ? 1 : 0.9})`,
+                    width: s.knob,
+                    height: s.knob,
+                    marginInlineStart: checked ? `calc(100% - ${s.knob}px)` : '0px',
                 }}
             >
                 {/* Inner dot indicator */}
-                <div
+                <span
                     className={cn(
-                        'absolute inset-0 m-auto rounded-full transition-all duration-200',
-                        checked ? c.dot : 'bg-muted-foreground/20'
+                        'rounded-full transition-colors duration-200',
+                        checked ? c.dot : 'bg-muted-foreground/30'
                     )}
-                    style={{
-                        width: checked ? '40%' : '30%',
-                        height: checked ? '40%' : '30%',
-                    }}
+                    style={{ width: '35%', height: '35%' }}
                 />
-            </div>
+            </span>
         </button>
     );
 });

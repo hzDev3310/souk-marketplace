@@ -25,8 +25,6 @@ const Stores = () => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [governorates, setGovernorates] = useState([]);
-  const [zones, setZones] = useState([]);
 
   const fetchStores = async () => {
     setLoading(true);
@@ -42,20 +40,7 @@ const Stores = () => {
 
   useEffect(() => {
     fetchStores();
-    api.get('/zones/options')
-      .then(res => {
-        setGovernorates(res.data.governorates || []);
-        setZones(res.data.zones || []);
-      })
-      .catch(() => {});
   }, []);
-
-  const govLabel = (code) => {
-    const g = governorates.find(x => x.code === code);
-    return g ? g.label : code;
-  };
-
-  const zoneOfGov = (code) => zones.find(z => (z.governorates || []).includes(code));
 
   const handleAdd = () => {
     navigate('/dashboard/stores/create');
@@ -201,9 +186,8 @@ const Stores = () => {
                             <TableHead className="py-5 px-6 text-[11px] font-black uppercase tracking-widest text-muted-foreground">{t('admin.stores.table.storeName')}</TableHead>
                             <TableHead className="py-5 px-6 text-[11px] font-black uppercase tracking-widest text-muted-foreground">{t('admin.stores.table.owner')}</TableHead>
                             <TableHead className="py-5 px-6 text-[11px] font-black uppercase tracking-widest text-muted-foreground">{t('admin.stores.table.email')}</TableHead>
-<TableHead className="py-5 px-6 text-[11px] font-black uppercase tracking-widest text-muted-foreground">{t('admin.stores.table.phone')}</TableHead>
-                           <TableHead className="py-5 px-6 text-[11px] font-black uppercase tracking-widest text-muted-foreground">{t('admin.stores.table.zone')}</TableHead>
-                           <TableHead className="py-5 px-6 text-[11px] font-black uppercase tracking-widest text-muted-foreground">{t('admin.stores.table.status')}</TableHead>
+                            <TableHead className="py-5 px-6 text-[11px] font-black uppercase tracking-widest text-muted-foreground">{t('admin.stores.table.phone')}</TableHead>
+                            <TableHead className="py-5 px-6 text-[11px] font-black uppercase tracking-widest text-muted-foreground">{t('admin.stores.table.status')}</TableHead>
                             <TableHead className="py-5 px-6 text-[11px] font-black uppercase tracking-widest text-muted-foreground text-end">{t('admin.stores.table.actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -238,14 +222,6 @@ const Stores = () => {
                                 </TableCell>
                                 <TableCell className="py-4 px-6 text-sm text-muted-foreground font-medium">{store.email}</TableCell>
                                 <TableCell className="py-4 px-6 text-sm text-muted-foreground font-medium">{store.store?.storePhone || '-'}</TableCell>
-                                <TableCell className="py-4 px-6">
-                                    <div className="space-y-0.5">
-                                        <p className="text-sm font-bold text-foreground">{store.store?.governorate ? govLabel(store.store.governorate) : '-'}</p>
-                                        {store.store?.governorate && zoneOfGov(store.store.governorate) && (
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-primary">{zoneOfGov(store.store.governorate).name}</p>
-                                        )}
-                                    </div>
-                                </TableCell>
                                 <TableCell className="py-4 px-6">
                                     <Switch size="sm" color="success" checked={!store.isBlocked} onCheckedChange={() => handleToggleBlock(store)} />
                                 </TableCell>

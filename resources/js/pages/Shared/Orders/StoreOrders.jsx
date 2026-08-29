@@ -138,11 +138,12 @@ const StoreOrders = () => {
                 return { label: "Livrée", color: "text-green-500", bg: "bg-green-500/10", icon: CheckCircle2 };
             case "retournee":
             case "returned":
+                return { label: "Retournée", color: "text-rose-500", bg: "bg-rose-500/10", icon: XCircle };
             case "annule":
             case "cancelled":
-                return { label: "Retournée", color: "text-rose-500", bg: "bg-rose-500/10", icon: XCircle };
+                return { label: "Annulé", color: "text-red-600", bg: "bg-red-600/10", icon: XCircle };
             default:
-                return { label: status || "Unknown", color: "text-muted-foreground", bg: "bg-muted/10", icon: AlertCircle };
+                return { label: status || "Non défini", color: "text-muted-foreground", bg: "bg-muted/10", icon: AlertCircle };
         }
     };
 
@@ -287,7 +288,7 @@ const StoreOrders = () => {
                                                 size="sm"
                                                 variant="secondary"
                                                 className="h-10 rounded-2xl font-black text-[10px] uppercase gap-2 px-4"
-                                                onClick={() => navigate(`/dashboard/orders/${order.id}`)}
+                                                onClick={() => navigate(`/dashboard/orders/${order.order_number || order.id}`)}
                                             >
                                                 <Eye className="w-4 h-4" />
                                                 View
@@ -380,7 +381,7 @@ const StoreOrders = () => {
                                                     size="sm"
                                                     variant="secondary"
                                                     className="h-9 rounded-xl font-bold text-xs"
-                                                    onClick={() => navigate(`/dashboard/orders/${order.id}`)}
+                                                    onClick={() => navigate(`/dashboard/orders/${order.order_number || order.id}`)}
                                                 >
                                                     <Eye className="w-4 h-4 mr-2" />
                                                     View

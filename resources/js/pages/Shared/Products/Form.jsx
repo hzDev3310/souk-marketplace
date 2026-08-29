@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import api from '@/lib/api';
 import CardBox from '@/components/shared/CardBox';
 import AdminPageLayout from '@/components/shared/AdminPageLayout';
@@ -79,7 +79,11 @@ const FieldError = ({ error }) => (
     error ? <p className="text-red-500 text-xs mt-1.5 font-semibold">{error[0]}</p> : null
 );
 
-const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
+const ProductForm = () => {
+    const { id: productId } = useParams();
+    const { user } = useAuth();
+    const mode = productId ? 'edit' : 'create';
+    const role = user?.role === 'STORE' ? 'store' : 'admin';
     const isEdit = mode === 'edit';
     const normalizedRole = String(role || '').toLowerCase();
     const isStore = normalizedRole === 'store';
@@ -87,7 +91,6 @@ const ProductForm = ({ mode = 'create', productId, role = 'admin' }) => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { showToast } = useNotification();
-    const { user } = useAuth();
 
     const [loading, setLoading] = useState(false);
     const [fetchingData, setFetchingData] = useState(true);

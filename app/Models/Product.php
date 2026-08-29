@@ -18,6 +18,7 @@ class Product extends Model {
 
     public function store() { return $this->belongsTo(Store::class); }
     public function albums() { return $this->hasMany(ProductAlbum::class); }
+    public function orderItems() { return $this->hasMany(OrderItem::class); }
     public function categoryLinks() { return $this->belongsToMany(Category::class); } 
     public function searchEmbedding() { return $this->hasOne(ProductSearchEmbedding::class); }
 

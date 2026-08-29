@@ -16,8 +16,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Plus, Pencil, Search, Users, MapPin, Activity, Filter, Download, Eye } from 'lucide-react';
-import Modal from '@/components/shared/Modal';
+import { Search, Users, MapPin, Activity, Filter, Download, Eye } from 'lucide-react';
 
 const Clients = () => {
     const { t } = useTranslation();
@@ -26,17 +25,6 @@ const Clients = () => {
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [editingClient, setEditingClient] = useState(null);
-    const [formData, setFormData] = useState({
-        name: '',
-        family_name: '',
-        email: '',
-        password: '',
-        address: '',
-        city: '',
-        codePostal: '',
-    });
 
     const fetchClients = async () => {
         setLoading(true);
@@ -54,38 +42,6 @@ const Clients = () => {
         fetchClients();
     }, []);
 
-    const handleSubmit = async (e) => {
-        if (e) e.preventDefault();
-        try {
-            if (editingClient) {
-                await api.put(`/admin/users/clients/${editingClient.id}`, formData);
-            } else {
-                await api.post('/admin/users/clients', formData);
-            }
-            setIsDialogOpen(false);
-            setEditingClient(null);
-            resetForm();
-            fetchClients();
-        } catch (error) {
-            console.error('Error saving client:', error);
-            alert('Error saving client');
-        }
-    };
-
-    const handleEdit = (client) => {
-        setEditingClient(client);
-        setFormData({
-            name: client.name || '',
-            family_name: client.family_name || '',
-            email: client.email || '',
-            password: '',
-            address: client.client?.address || '',
-            city: client.client?.city || '',
-            codePostal: client.client?.codePostal || '',
-        });
-        setIsDialogOpen(true);
-    };
-
     const handleView = (client) => {
         navigate(`/dashboard/clients/${client.client?.id || client.id}/orders`, { state: { client } });
     };
@@ -102,24 +58,6 @@ const Clients = () => {
         }
     };
 
-    const resetForm = () => {
-        setFormData({
-            name: '',
-            family_name: '',
-            email: '',
-            password: '',
-            address: '',
-            city: '',
-            codePostal: '',
-        });
-    };
-
-    const handleAdd = () => {
-        setEditingClient(null);
-        resetForm();
-        setIsDialogOpen(true);
-    };
-
     const filteredClients = clients.filter(client =>
         (client.name?.toLowerCase().includes(search.toLowerCase()) ||
         client.email?.toLowerCase().includes(search.toLowerCase()) ||
@@ -132,8 +70,6 @@ const Clients = () => {
             title="admin.clients.title"
             subtitle="admin.clients.subtitle"
             icon={Users}
-            onAdd={handleAdd}
-            addLabel="admin.clients.add"
         >
             <div className="space-y-6">
                 {/* Search & Actions Bar */}
@@ -212,18 +148,10 @@ const Clients = () => {
                                         onClick={() => handleView(client)}
                                         className="h-10 px-4 rounded-2xl bg-secondary/5 text-secondary hover:bg-secondary/20 text-xs font-bold gap-2"
                                     >
-                                        <Eye size={16} strokeWidth={2.5} />
-                                        {t('admin.clients.table.viewOrders') || 'View orders'}
-                                    </Button>
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            size="iconsm" variant="soft" rounded="xl" color="warning"
-                                            onClick={() => handleEdit(client)}
-                                        >
-                                            <Pencil size={18} strokeWidth={2.5} />
-                                        </Button>
-                                    </div>
-                                </div>
+<Eye size={16} strokeWidth={2.5} />
+                                         {t('admin.clients.table.viewOrders') || 'View orders'}
+                                     </Button>
+                                 </div>
                             </div>
                         ))
                     )}
@@ -288,107 +216,14 @@ const Clients = () => {
                                                         <Eye size={18} strokeWidth={2.5} />
                                                     </Button>
                                                 </Tooltip>
-                                                <Tooltip content={t('common.actions.edit')}>
-                                                    <Button
-                                                        variant="soft"
-                                                        size="iconsm"
-                                                        rounded="xl"
-                                                        color="warning"
-                                                        onClick={() => handleEdit(client)}
-                                                    >
-                                                        <Pencil size={18} strokeWidth={2.5} />
-                                                    </Button>
-                                                </Tooltip>
                                             </div>
                                         </TableCell>
                                     </tr>
                                 ))}
-                            </TableBody>
+</TableBody>
                         </Table>
                     </div>
                 </CardBox>
-
-                {/* Premium Modal for Add/Edit */}
-                <Modal
-                    isOpen={isDialogOpen}
-                    onClose={() => setIsDialogOpen(false)}
-                    title={editingClient ? t('admin.clients.form.editTitle') : t('admin.clients.form.addTitle')}
-                    subtitle={editingClient ? `Editing ${editingClient.name}` : "Register a new platform user"}
-                    icon={Users}
-                    maxWidth="max-w-lg"
-                    footer={
-                        <>
-                            <Button type="button" variant="outlinemuted" size="xl" padding="xl" rounded="xl" className="font-bold" onClick={() => setIsDialogOpen(false)}>
-                                {t('admin.clients.form.cancel')}
-                            </Button>
-                            <Button onClick={handleSubmit} size="xl" padding="2xl" rounded="xl" className="font-black shadow-lg shadow-primary/20 transition-all">
-                                {editingClient ? t('admin.clients.form.update') : t('admin.clients.form.create')}
-                            </Button>
-                        </>
-                    }
-                >
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">{t('admin.clients.form.firstName')} *</label>
-                                <Input
-                                    required
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="h-12 bg-muted/30 border-border/50 rounded-xl"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px) font-black uppercase tracking-widest text-muted-foreground ml-1">{t('admin.clients.form.lastName')}</label>
-                                <Input
-                                    value={formData.family_name}
-                                    onChange={(e) => setFormData({ ...formData, family_name: e.target.value })}
-                                    className="h-12 bg-muted/30 border-border/50 rounded-xl"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">{t('admin.clients.form.email')} *</label>
-                            <Input
-                                type="email"
-                                required
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="h-12 bg-muted/30 border-border/50 rounded-xl"
-                            />
-                        </div>
-                        {!editingClient && (
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">{t('admin.clients.form.password')} *</label>
-                                <Input
-                                    type="password"
-                                    required={!editingClient}
-                                    value={formData.password}
-                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    className="h-12 bg-muted/30 border-border/50 rounded-xl"
-                                />
-                            </div>
-                        )}
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">{t('admin.clients.form.city')}</label>
-                                <Input
-                                    value={formData.city}
-                                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                    className="h-12 bg-muted/30 border-border/50 rounded-xl"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">{t('admin.clients.form.postalCode')}</label>
-                                <Input
-                                    value={formData.codePostal}
-                                    onChange={(e) => setFormData({ ...formData, codePostal: e.target.value })}
-                                    className="h-12 bg-muted/30 border-border/50 rounded-xl"
-                                />
-                            </div>
-                        </div>
-                    </form>
-                </Modal>
             </div>
         </AdminPageLayout>
     );

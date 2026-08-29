@@ -101,6 +101,17 @@ const ClientOrders = () => {
     const totalPaid = orders.reduce((sum, order) => sum + (order.factures || []).filter(f => f.status?.toLowerCase() === 'paid').reduce((s, f) => s + Number(f.amount), 0), 0);
     const totalUnpaid = orders.reduce((sum, order) => sum + (order.factures || []).filter(f => f.status?.toLowerCase() !== 'paid').reduce((s, f) => s + Number(f.amount), 0), 0);
 
+    const cancelledCount = orders.filter(order => 
+        order.items?.some(item => ['annule', 'cancelled'].includes(item.status?.toLowerCase()))
+    ).length;
+    const returnedCount = orders.filter(order => 
+        order.items?.some(item => ['retournee', 'returned'].includes(item.status?.toLowerCase()))
+    ).length;
+    const deliveredCount = orders.filter(order => 
+        order.items?.some(item => ['livree', 'delivered', 'shipped'].includes(item.status?.toLowerCase()))
+    ).length;
+    const otherCount = orders.length - cancelledCount - returnedCount - deliveredCount;
+
     return (
         <AdminPageLayout
             title={t('admin.clients.orders.title') || "Client Orders"}
@@ -122,7 +133,7 @@ const ClientOrders = () => {
                                     <span className="flex items-center gap-1.5"><MapPin size={12} /> {client.client?.city || '-'}, {client.client?.codePostal || '-'}</span>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
                                 <div className="px-4 py-3 rounded-2xl bg-muted/30 border border-border/40 text-center">
                                     <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{t('admin.clients.orders.totalOrders') || "Orders"}</p>
                                     <p className="text-xl font-black text-foreground">{orders.length}</p>
@@ -134,6 +145,22 @@ const ClientOrders = () => {
                                 <div className="px-4 py-3 rounded-2xl bg-muted/30 border border-border/40 text-center">
                                     <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{t('admin.clients.orders.totalUnpaid') || "Unpaid"}</p>
                                     <p className="text-xl font-black text-rose-500">{totalUnpaid.toFixed(2)} TND</p>
+                                </div>
+                                <div className="px-4 py-3 rounded-2xl bg-amber-50/50 border border-amber-200/50 text-center">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-amber-700">{t('admin.clients.orders.cancelled') || "Cancelled"}</p>
+                                    <p className="text-xl font-black text-amber-700">{cancelledCount}</p>
+                                </div>
+                                <div className="px-4 py-3 rounded-2xl bg-rose-50/50 border border-rose-200/50 text-center">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-rose-700">{t('admin.clients.orders.returned') || "Returned"}</p>
+                                    <p className="text-xl font-black text-rose-700">{returnedCount}</p>
+                                </div>
+                                <div className="px-4 py-3 rounded-2xl bg-emerald-50/50 border border-emerald-200/50 text-center">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-emerald-700">{t('admin.clients.orders.delivered') || "Delivered"}</p>
+                                    <p className="text-xl font-black text-emerald-700">{deliveredCount}</p>
+                                </div>
+                                <div className="px-4 py-3 rounded-2xl bg-blue-50/50 border border-blue-200/50 text-center">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-blue-700">{t('admin.clients.orders.other') || "Other"}</p>
+                                    <p className="text-xl font-black text-blue-700">{otherCount}</p>
                                 </div>
                             </div>
                         </div>

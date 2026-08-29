@@ -16,49 +16,53 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import DashboardLayout from './components/layout/DashboardLayout';
-import Dashboard from './pages/Dashboard';
+import Dashboard from './pages/Shared/Dashboard/Index';
 // Admin pages
-import AdminStores from './pages/admin/Stores';
-import StoreCreate from './pages/admin/StoreCreate';
-import StoreEdit from './pages/admin/StoreEdit';
-import AdminClients from './pages/admin/Clients';
-import AdminClientOrders from './pages/admin/ClientOrders';
+import AdminStores from './pages/admin/Stores/Index';
+import StoreCreate from './pages/admin/Stores/Create';
+import StoreEdit from './pages/admin/Stores/Edit';
+import AdminClients from './pages/admin/Clients/Index';
+import AdminClientOrders from './pages/admin/Clients/Orders';
 
 // Influencers and ShippingEmployees pages removed
-import AdminCategories from './pages/admin/Categories';
-import CategoryCreate from './pages/admin/CategoryCreate';
-import CategoryEdit from './pages/admin/CategoryEdit';
-import AdminProducts from './pages/admin/Products';
-import ProductCreate from './pages/admin/ProductCreate';
-import ProductEdit from './pages/admin/ProductEdit';
-import AdminOrders from './pages/admin/Orders';
-import OrderDetails from './pages/OrderDetails';
+import AdminCategories from './pages/admin/Categories/Index';
+import CategoryCreate from './pages/admin/Categories/Create';
+import CategoryEdit from './pages/admin/Categories/Edit';
+import Products from './pages/Shared/Products/Index';
+import ProductForm from './pages/Shared/Products/Form';
+import AdminOrders from './pages/Shared/Orders/AdminOrders';
+import StoreOrders from './pages/Shared/Orders/StoreOrders';
+import OrderDetails from './pages/Shared/Orders/Detail';
+import ProductDetail from './pages/Shared/Products/Detail';
 
-// Store pages
-import StoreProducts from './pages/store/Products';
-import StoreOrders from './pages/store/Orders';
+import AdminProfile from './pages/admin/Profile/Index';
 import StoreProfile from './pages/store/Profile';
-import ProfilePage from './pages/Profile';
 
 // Role-based route wrapper for products list
 const RoleBasedProducts = () => {
     const { user } = useAuth();
-    if (user?.role === 'ADMIN') return <AdminProducts />;
-    if (user?.role === 'STORE') return <StoreProducts />;
+    if (user?.role === 'ADMIN' || user?.role === 'STORE') return <Products />;
+    return <Navigate to="/dashboard" replace />;
+};
+
+// Role-based route wrapper for product detail
+const RoleBasedProductDetail = () => {
+    const { user } = useAuth();
+    if (user?.role === 'ADMIN' || user?.role === 'STORE') return <ProductDetail />;
     return <Navigate to="/dashboard" replace />;
 };
 
 // Role-based route wrapper for product create
 const RoleBasedProductCreate = () => {
     const { user } = useAuth();
-    if (user?.role === 'ADMIN' || user?.role === 'STORE') return <ProductCreate />;
+    if (user?.role === 'ADMIN' || user?.role === 'STORE') return <ProductForm />;
     return <Navigate to="/dashboard" replace />;
 };
 
 // Role-based route wrapper for product edit
 const RoleBasedProductEdit = () => {
     const { user } = useAuth();
-    if (user?.role === 'ADMIN' || user?.role === 'STORE') return <ProductEdit />;
+    if (user?.role === 'ADMIN' || user?.role === 'STORE') return <ProductForm />;
     return <Navigate to="/dashboard" replace />;
 };
 
@@ -71,9 +75,9 @@ const RoleBasedOrders = () => {
 
 const RoleBasedProfile = () => {
     const { user } = useAuth();
-    if (user?.role === 'ADMIN') return <ProfilePage />;
+    if (user?.role === 'ADMIN') return <AdminProfile />;
     if (user?.role === 'STORE') return <StoreProfile />;
-    return <ProfilePage />;
+    return <Navigate to="/dashboard" replace />;
 };
 
 /** Renders child routes under `/dashboard` without extra UI (avoids `/dashboard/*` swallowing `/dashboard/login`). */
@@ -108,6 +112,7 @@ const App = () => {
                         <Route path="categories/:categoryId" element={<AdminCategories />} />
                         <Route path="categories/:id/edit" element={<CategoryEdit />} />
                         <Route path="products" element={<RoleBasedProducts />} />
+                        <Route path="products/:id" element={<RoleBasedProductDetail />} />
                         <Route path="products/create" element={<RoleBasedProductCreate />} />
                         <Route path="products/:id/edit" element={<RoleBasedProductEdit />} />
                         <Route path="orders" element={<RoleBasedOrders />} />
