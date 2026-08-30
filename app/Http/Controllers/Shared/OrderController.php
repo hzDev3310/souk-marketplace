@@ -217,7 +217,7 @@ class OrderController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         $orders = Order::where('client_id', $clientId)
-            ->with(['items.product.albums', 'items.product.store', 'factures', 'client.user'])
+            ->with(['items.product.albums', 'items.product.store', 'client.user'])
             ->orderBy('created_at', 'desc')
             ->get();
         

@@ -931,5 +931,9 @@
     "website.vipTitle": "انضم إلى مجموعتنا المتميزة",
     "website.visit": "زيارة",
     "website.welcome": "مرحباً",
-    "welcome_message": "سجّل الدخول لإدارة Souk AI من لوحة التحكم."
+    "welcome_message": "سجّل الدخول لإدارة Souk AI من لوحة التحكم.",
+    "admin.clients.orders.delivered": "تم التسليم",
+    "admin.clients.orders.returned": "مرتجع",
+    "admin.clients.orders.other": "أخرى",
+    "common.status.unknown": "غير معروف"
 }

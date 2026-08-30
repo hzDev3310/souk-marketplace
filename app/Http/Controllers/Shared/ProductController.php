@@ -47,7 +47,18 @@ class ProductController extends Controller
         if ($user->role !== 'ADMIN' && $product->store_id !== optional($user->store)->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-        return response()->json($product->load(['store', 'albums'])->loadCount(['orderItems as orders_count']));
+        return response()->json($product->load(['store', 'albums'])
+            ->loadCount(['orderItems as orders_count'])
+            ->loadCount(['orderItems as delivered_orders' => function ($q) {
+                $q->whereHas('order', function ($oq) {
+                    $oq->where('status', 'livree');
+                });
+            }])
+            ->loadCount(['orderItems as returned_orders' => function ($q) {
+                $q->whereHas('order', function ($oq) {
+                    $oq->where('status', 'retournee');
+                });
+            }]));
     }
 
     public function store(Request $request)

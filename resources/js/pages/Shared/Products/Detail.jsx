@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Activity, ArrowLeft, Box, Pencil, Package, ShieldCheck, BadgeCheck } from 'lucide-react';
+import { Activity, ArrowLeft, Box, Pencil, Package, ShieldCheck, BadgeCheck, ShoppingCart, PackageCheck, RotateCcw } from 'lucide-react';
 import api from '@/lib/api';
 import { imageFallback } from '@/utils/imageFallback';
 import { useAuth } from '@/context/AuthContext';
@@ -227,6 +227,28 @@ const ProductDetail = () => {
                                 <span className="text-sm font-bold text-muted-foreground">
                                     {product.stock} units
                                 </span>
+                            </div>
+                        </div>
+
+                        {/* Product Order Stats */}
+                        <div className="space-y-4">
+                            <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Order Performance</h4>
+                            <div className="grid grid-cols-3 gap-3">
+                                <CardBox className="p-4 bg-muted/20 border border-border/20 rounded-3xl shadow-none text-center">
+                                    <ShoppingCart className="w-5 h-5 text-primary mx-auto mb-2" />
+                                    <p className="text-2xl font-black text-foreground">{product.orders_count ?? 0}</p>
+                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Orders</p>
+                                </CardBox>
+                                <CardBox className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-3xl shadow-none text-center">
+                                    <PackageCheck className="w-5 h-5 text-emerald-600 mx-auto mb-2" />
+                                    <p className="text-2xl font-black text-emerald-600">{product.delivered_orders ?? 0}</p>
+                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Delivered</p>
+                                </CardBox>
+                                <CardBox className="p-4 bg-rose-500/5 border border-rose-500/20 rounded-3xl shadow-none text-center">
+                                    <RotateCcw className="w-5 h-5 text-rose-600 mx-auto mb-2" />
+                                    <p className="text-2xl font-black text-rose-600">{product.returned_orders ?? 0}</p>
+                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Returned</p>
+                                </CardBox>
                             </div>
                         </div>
 

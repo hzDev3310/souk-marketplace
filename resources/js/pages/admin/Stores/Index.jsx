@@ -16,7 +16,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Pencil, Search, Store, Activity, Filter, Download } from 'lucide-react';
+import { Plus, Pencil, Search, Store, Activity, Filter, Download, Eye, Trash2 } from 'lucide-react';
+import { imageFallback } from '@/utils/imageFallback';
+
+const getStoreLogoUrl = (logo) => {
+    if (!logo || logo === 'null' || logo === 'undefined') return null;
+    if (logo.startsWith('http') || logo.startsWith('/')) return logo;
+    return `/storage/${logo.replace(/^storage\//, '').replace(/^\//, '')}`;
+};
+
+const getStoreName = (store) => {
+    return store?.store?.name_fr || store?.store?.name_en || store?.store?.name_ar || store?.name || 'Store';
+};
 
 const Stores = () => {
   const { t } = useTranslation();
@@ -48,6 +59,21 @@ const Stores = () => {
 
   const handleEdit = (store) => {
     navigate(`/dashboard/stores/${store.id}/edit`);
+  };
+
+  const handleView = (store) => {
+    navigate(`/dashboard/stores/${store.store?.id || store.id}`);
+  };
+
+  const handleDelete = async (store) => {
+    if ((store.products_count ?? 0) > 0) return;
+    if (!window.confirm('Are you sure you want to delete this store?')) return;
+    try {
+      await api.delete(`/admin/users/stores/${store.id}`);
+      setStores((prev) => prev.filter((s) => s.id !== store.id));
+    } catch (error) {
+      console.error('Error deleting store:', error);
+    }
   };
 
   const handleToggleBlock = async (store) => {
@@ -132,11 +158,20 @@ const Stores = () => {
                             className="bg-card border border-border/60 rounded-[24px] p-5 space-y-4 shadow-sm active:scale-[0.98] transition-transform"
                         >
                             <div className="flex items-start gap-3">
-                                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-xl uppercase">
-                                    {(store.store?.name_fr || store.name).charAt(0)}
+                                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-xl uppercase overflow-hidden">
+                                    {getStoreLogoUrl(store.store?.logo) ? (
+                                        <img
+                                            src={getStoreLogoUrl(store.store?.logo)}
+                                            alt={getStoreName(store)}
+                                            className="w-full h-full object-cover"
+                                            onError={imageFallback}
+                                        />
+                                    ) : (
+                                        getStoreName(store).charAt(0)
+                                    )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="font-black text-foreground tracking-tight leading-none mb-1">{store.store?.name_fr || store.name}</h3>
+                                    <h3 className="font-black text-foreground tracking-tight leading-none mb-1">{getStoreName(store)}</h3>
                                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{store.store?.matriculeFiscale || 'No MAT'}</p>
                                 </div>
                                 <Switch size="sm" color="success" checked={!store.isBlocked} onCheckedChange={() => handleToggleBlock(store)} />
@@ -159,6 +194,16 @@ const Stores = () => {
                                     <p className="text-xs font-bold text-primary truncate max-w-[150px]">{store.email}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
+                                    <Tooltip content="View">
+                                        <Button
+                                            variant="soft"
+                                            size="iconsm"
+                                            rounded="xl"
+                                            onClick={() => handleView(store)}
+                                        >
+                                            <Eye size={18} strokeWidth={2.5} />
+                                        </Button>
+                                    </Tooltip>
                                     <Tooltip content={t('common.actions.edit')}>
                                         <Button
                                             variant="soft"
@@ -168,6 +213,18 @@ const Stores = () => {
                                             onClick={() => handleEdit(store)}
                                         >
                                             <Pencil size={18} strokeWidth={2.5} />
+                                        </Button>
+                                    </Tooltip>
+                                    <Tooltip content="Delete">
+                                        <Button
+                                            variant="soft"
+                                            size="iconsm"
+                                            color="error"
+                                            rounded="xl"
+                                            disabled={(store.products_count ?? 0) > 0}
+                                            onClick={() => handleDelete(store)}
+                                        >
+                                            <Trash2 size={18} strokeWidth={2.5} />
                                         </Button>
                                     </Tooltip>
                                 </div>
@@ -208,11 +265,20 @@ const Stores = () => {
                             >
                                 <TableCell className="py-4 px-6">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black uppercase">
-                                            {(store.store?.name_fr || store.name).charAt(0)}
+                                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black uppercase overflow-hidden">
+                                            {getStoreLogoUrl(store.store?.logo) ? (
+                                                <img
+                                                    src={getStoreLogoUrl(store.store?.logo)}
+                                                    alt={getStoreName(store)}
+                                                    className="w-full h-full object-cover"
+                                                    onError={imageFallback}
+                                                />
+                                            ) : (
+                                                getStoreName(store).charAt(0)
+                                            )}
                                         </div>
                                         <div>
-                                            <p className="font-black text-foreground tracking-tight">{store.store?.name_fr || store.name}</p>
+                                            <p className="font-black text-foreground tracking-tight">{getStoreName(store)}</p>
                                             <p className="text-[10px] font-bold text-muted-foreground uppercase">{store.store?.matriculeFiscale || '-'}</p>
                                         </div>
                                     </div>
@@ -227,6 +293,16 @@ const Stores = () => {
                                 </TableCell>
                                 <TableCell className="py-4 px-6 text-end">
                                     <div className="flex items-center justify-end gap-2  transition-opacity">
+                                        <Tooltip content="View">
+                                            <Button
+                                                variant="soft"
+                                                size="iconsm"
+                                                rounded="xl"
+                                                onClick={() => handleView(store)}
+                                            >
+                                                <Eye size={18} strokeWidth={2.5} />
+                                            </Button>
+                                        </Tooltip>
                                         <Tooltip content={t('common.actions.edit')}>
                                             <Button
                                                 variant="soft"
@@ -236,6 +312,18 @@ const Stores = () => {
                                                 onClick={() => handleEdit(store)}
                                             >
                                                 <Pencil size={18} strokeWidth={2.5} />
+                                            </Button>
+                                        </Tooltip>
+                                        <Tooltip content="Delete">
+                                            <Button
+                                                variant="soft"
+                                                size="iconsm"
+                                                color="error"
+                                                rounded="xl"
+                                                disabled={(store.products_count ?? 0) > 0}
+                                                onClick={() => handleDelete(store)}
+                                            >
+                                                <Trash2 size={18} strokeWidth={2.5} />
                                             </Button>
                                         </Tooltip>
                                     </div>

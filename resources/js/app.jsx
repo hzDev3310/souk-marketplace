@@ -34,7 +34,7 @@ import AdminOrders from './pages/Shared/Orders/AdminOrders';
 import StoreOrders from './pages/Shared/Orders/StoreOrders';
 import OrderDetails from './pages/Shared/Orders/Detail';
 import ProductDetail from './pages/Shared/Products/Detail';
-import StoreDetail from './pages/Shared/Stores/Detail';
+import StoreDetail from './pages/admin/Stores/Detail';
 
 import AdminProfile from './pages/admin/Profile/Index';
 import StoreProfile from './pages/store/Profile';

@@ -931,5 +931,9 @@
     "website.vipTitle": "Rejoignez notre collection VIP",
     "website.visit": "Visiter",
     "website.welcome": "Bienvenue",
-    "welcome_message": "Connectez-vous pour gérer Souk AI depuis le tableau de bord."
+    "welcome_message": "Connectez-vous pour gérer Souk AI depuis le tableau de bord.",
+    "admin.clients.orders.delivered": "Livré",
+    "admin.clients.orders.returned": "Retourné",
+    "admin.clients.orders.other": "Autre",
+    "common.status.unknown": "Inconnu"
 }

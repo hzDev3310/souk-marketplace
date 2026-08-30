@@ -933,5 +933,9 @@
     "website.vipTitle": "Join our VIP collection",
     "website.visit": "Visit",
     "website.welcome": "Welcome",
-    "welcome_message": "Sign in to manage Souk AI from the admin dashboard."
+    "welcome_message": "Sign in to manage Souk AI from the admin dashboard.",
+    "admin.clients.orders.delivered": "Delivered",
+    "admin.clients.orders.returned": "Returned",
+    "admin.clients.orders.other": "Other",
+    "common.status.unknown": "Unknown"
 }

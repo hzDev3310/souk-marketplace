@@ -3,12 +3,17 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\HandlesFileUploads;
+use App\Models\Store;
 use App\Services\UserService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class UserManagementController extends Controller
 {
+    use HandlesFileUploads;
+
     protected $userService;
     
     public function __construct(UserService $userService)
@@ -148,6 +153,38 @@ class UserManagementController extends Controller
     public function getStores()
     {
         $stores = $this->userService->getAllUsersByRole('STORE');
+
+        $productCounts = \App\Models\Product::query()
+            ->selectRaw('store_id, COUNT(*) as products_count')
+            ->groupBy('store_id')
+            ->pluck('products_count', 'store_id');
+
+        $orderStats = \Illuminate\Support\Facades\DB::table('order_items')
+            ->join('products', 'products.id', '=', 'order_items.product_id')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->selectRaw("products.store_id as store_id,
+                COUNT(DISTINCT orders.id) as total_orders,
+                COUNT(DISTINCT CASE WHEN orders.status = 'livree' THEN orders.id END) as delivered_orders,
+                COUNT(DISTINCT CASE WHEN orders.status = 'retournee' THEN orders.id END) as returned_orders,
+                COUNT(DISTINCT CASE WHEN orders.status = 'annule' THEN orders.id END) as cancelled_orders,
+                COALESCE(SUM(order_items.price * order_items.quantity), 0) as revenue")
+            ->groupBy('products.store_id')
+            ->get()
+            ->keyBy('store_id');
+
+        foreach ($stores as &$store) {
+            $storeId = $store['store']['id'] ?? null;
+            $store['products_count'] = $storeId ? (int) ($productCounts[$storeId] ?? 0) : 0;
+
+            $stats = $storeId ? ($orderStats[$storeId] ?? null) : null;
+            $store['total_orders'] = $stats ? (int) $stats->total_orders : 0;
+            $store['delivered_orders'] = $stats ? (int) $stats->delivered_orders : 0;
+            $store['returned_orders'] = $stats ? (int) $stats->returned_orders : 0;
+            $store['cancelled_orders'] = $stats ? (int) $stats->cancelled_orders : 0;
+            $store['revenue'] = $stats ? (float) $stats->revenue : 0.0;
+        }
+        unset($store);
+
         return response()->json(['data' => $stores]);
     }
 
@@ -167,17 +204,25 @@ class UserManagementController extends Controller
             'name_fr' => 'nullable|string',
             'name_ar' => 'nullable|string',
             'name_en' => 'nullable|string',
+            'description_fr' => 'nullable|string',
+            'description_ar' => 'nullable|string',
+            'description_en' => 'nullable|string',
             'storePhone' => 'nullable|string',
             'address' => 'nullable|string',
             'matriculeFiscale' => 'nullable|string',
             'rib' => 'nullable|string',
+            'logo' => 'nullable|file|image|max:4096',
+            'cover' => 'nullable|file|image|max:4096',
         ]);
         
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
         
-        $user = $this->userService->createStore($request->all());
+        $data = $request->except(['logo', 'cover']);
+        $data = $this->persistStoreImages($data, $request);
+        
+        $user = $this->userService->createStore($data);
         return response()->json(['message' => 'Store created successfully', 'data' => $user], 201);
     }
     
@@ -191,19 +236,69 @@ class UserManagementController extends Controller
             'name_fr' => 'nullable|string',
             'name_ar' => 'nullable|string',
             'name_en' => 'nullable|string',
+            'description_fr' => 'nullable|string',
+            'description_ar' => 'nullable|string',
+            'description_en' => 'nullable|string',
             'storePhone' => 'nullable|string',
             'address' => 'nullable|string',
             'matriculeFiscale' => 'nullable|string',
             'rib' => 'nullable|string',
             'isActive' => 'nullable|boolean',
+            'logo' => 'nullable|file|image|max:4096',
+            'cover' => 'nullable|file|image|max:4096',
         ]);
         
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
         
-        $user = $this->userService->updateStore($id, $request->all());
+        $data = $request->except(['logo', 'cover']);
+        
+        if ($request->hasFile('logo') || $request->hasFile('cover')) {
+            $data = $this->persistStoreImages($data, $request, $id);
+        }
+        
+        $user = $this->userService->updateStore($id, $data);
         return response()->json(['message' => 'Store updated successfully', 'data' => $user]);
+    }
+    
+    /**
+     * Store uploaded logo/cover files and return their public paths.
+     * When updating ($id given), old files are removed from disk first.
+     */
+    private function persistStoreImages(array $data, Request $request, ?string $userId = null): array
+    {
+        $store = null;
+        if ($userId && $request->hasFile('logo') || $userId && $request->hasFile('cover')) {
+            $user = \App\Models\User::where('id', $userId)->with('store')->first();
+            $store = $user?->store;
+        }
+
+        $storeName = $store?->name_en ?: $store?->name_fr ?: $store?->name_ar ?: ($data['name_en'] ?? $data['name_fr'] ?? $data['name_ar'] ?? 'store');
+
+        if ($request->hasFile('logo')) {
+            if ($store?->logo && Storage::exists('public/' . $store->logo)) {
+                Storage::delete('public/' . $store->logo);
+            }
+            try {
+                $data['logo'] = $this->storeUploadedFile($request->file('logo'), 'store_logos', 'store', $storeName);
+            } catch (\Throwable $e) {
+                return $this->fileUploadErrorResponse();
+            }
+        }
+
+        if ($request->hasFile('cover')) {
+            if ($store?->cover && Storage::exists('public/' . $store->cover)) {
+                Storage::delete('public/' . $store->cover);
+            }
+            try {
+                $data['cover'] = $this->storeUploadedFile($request->file('cover'), 'store_covers', 'store', $storeName);
+            } catch (\Throwable $e) {
+                return $this->fileUploadErrorResponse();
+            }
+        }
+
+        return $data;
     }
     
     public function deleteStore($id)
