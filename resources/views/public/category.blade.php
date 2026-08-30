@@ -16,7 +16,7 @@
         <div class="relative h-40 md:h-56">
             @if($category->cover)
                 <img src="{{ image_url($category->cover) }}" class="w-full h-full object-cover"
-                    onerror="this.onerror=null; this.src='https://media.wallmantra.com/product/original/product_placeholder.webp';">
+                    onerror="this.onerror=null; this.src='/images/default-placeholder.png';">
             @else
                 <div class="w-full h-full bg-gradient-to-br from-primary/20 via-secondary/10 to-muted"></div>
             @endif
@@ -31,7 +31,7 @@
                     @if($category->icon)
                         @if(str_starts_with($category->icon, 'http') || file_exists(public_path($category->icon)))
                             <img src="{{ image_url($category->icon) }}" alt="{{ $category->{'name_'.app()->getLocale()} }}" class="w-full h-full object-cover"
-                                onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                onerror="this.onerror=null; this.src='/images/default-placeholder.png';">
                             <span style="display:none" class="w-full h-full items-center justify-center bg-primary/10 text-primary text-3xl font-black">{!! lucide_icon($category->icon, 'w-10 h-10') !!}</span>
                         @else
                             <div class="w-full h-full bg-primary/10 flex items-center justify-center">

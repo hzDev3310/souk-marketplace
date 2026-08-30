@@ -34,6 +34,7 @@ import AdminOrders from './pages/Shared/Orders/AdminOrders';
 import StoreOrders from './pages/Shared/Orders/StoreOrders';
 import OrderDetails from './pages/Shared/Orders/Detail';
 import ProductDetail from './pages/Shared/Products/Detail';
+import StoreDetail from './pages/Shared/Stores/Detail';
 
 import AdminProfile from './pages/admin/Profile/Index';
 import StoreProfile from './pages/store/Profile';
@@ -115,6 +116,7 @@ const App = () => {
                         <Route path="products/:id" element={<RoleBasedProductDetail />} />
                         <Route path="products/create" element={<RoleBasedProductCreate />} />
                         <Route path="products/:id/edit" element={<RoleBasedProductEdit />} />
+                        <Route path="stores/:id" element={<StoreDetail />} />
                         <Route path="orders" element={<RoleBasedOrders />} />
                         <Route path="orders/:id" element={<OrderDetails />} />
                         <Route path="analytics" element={<div className="p-6 text-link">Analytics Page (Work in Progress)</div>} />

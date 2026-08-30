@@ -22,10 +22,10 @@
             <div class="relative aspect-square bg-card glass border border-border/40 rounded-[60px] overflow-hidden premium-shadow">
                 @if($product->albums->first())
                     <img id="main-product-image" src="{{ $product->albums->first()->file }}" alt="{{ $product->{'name_'.app()->getLocale()} }}" class="w-full h-full object-cover"
-                        onerror="this.onerror=null; this.src='https://media.wallmantra.com/product/original/product_placeholder.webp';">
+                        onerror="this.onerror=null; this.src='/images/default-placeholder.png';">
                 @else
                     <img id="main-product-image" src="/storage/empty/empty.webp" alt="{{ $product->{'name_'.app()->getLocale()} }}" class="w-full h-full object-cover"
-                        onerror="this.onerror=null; this.src='https://media.wallmantra.com/product/original/product_placeholder.webp';">
+                        onerror="this.onerror=null; this.src='/images/default-placeholder.png';">
                 @endif
             </div>
             
@@ -35,13 +35,13 @@
                         <div class="w-24 h-24 bg-card glass border border-border/40 rounded-3xl overflow-hidden cursor-pointer hover:border-primary transition-colors"
                             onclick="window.productGallery && window.productGallery.setImage('{{ $album->file }}', this)">
                             <img src="{{ $album->file }}" class="w-full h-full object-cover"
-                                onerror="this.onerror=null; this.src='https://media.wallmantra.com/product/original/product_placeholder.webp';">
+                                onerror="this.onerror=null; this.src='/images/default-placeholder.png';">
                         </div>
                     @endforeach
                 @else
                     <div class="w-24 h-24 bg-card glass border border-border/40 rounded-3xl overflow-hidden">
                         <img src="/storage/empty/empty.webp" class="w-full h-full object-cover"
-                            onerror="this.onerror=null; this.src='https://media.wallmantra.com/product/original/product_placeholder.webp';">
+                            onerror="this.onerror=null; this.src='/images/default-placeholder.png';">
                     </div>
                 @endif
             </div>
@@ -225,4 +225,3 @@
     // Variant selection intentionally disabled for this storefront build.
 </script>
 @endpush
-

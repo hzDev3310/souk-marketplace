@@ -38,13 +38,13 @@
         @if($product->albums->first())
         <img src="{{ $product->albums->first()->file }}"
              alt="{{ $product->{'name_' . app()->getLocale()} }}"
-             onerror="this.onerror=null; this.src='{{ $placeholder }}'"
+             onerror="this.onerror=null; this.src='/images/default-placeholder.png';"
              loading="lazy"
              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out">
         @else
         <img src="/storage/empty/empty.webp"
              alt="{{ $product->{'name_' . app()->getLocale()} }}"
-             onerror="this.onerror=null; this.src='{{ $placeholder }}'"
+             onerror="this.onerror=null; this.src='/images/default-placeholder.png';"
              loading="lazy"
              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out">
         @endif
@@ -83,7 +83,7 @@
                     <img src="{{ image_url($product->store->logo) }}"
                          alt="{{ $product->store->{'name_' . app()->getLocale()} }}"
                          class="w-5 h-5 rounded-full object-cover border border-border/40"
-                         onerror="this.onerror=null; this.src='https://media.wallmantra.com/product/original/product_placeholder.webp';">
+                         onerror="this.onerror=null; this.src='/images/default-placeholder.png';">
                     <div class="w-5 h-5 rounded-full bg-primary/10 items-center justify-center hidden">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>

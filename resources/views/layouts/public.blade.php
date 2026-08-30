@@ -118,7 +118,7 @@
                         @if($websiteLogo)
                             <img src="{{ str_starts_with($websiteLogo, 'http') ? $websiteLogo : '/storage/' . $websiteLogo }}"
                                 alt="{{ $websiteName }}" class="w-full h-full object-contain p-1.5 bg-white"
-                                onerror="this.onerror=null; this.src='https://media.wallmantra.com/product/original/product_placeholder.webp';">
+                                onerror="this.onerror=null; this.src='/images/default-placeholder.png';">
                         @else
                             <span class="text-white font-black text-xl">{{ strtoupper(substr($websiteName, 0, 1)) }}</span>
                         @endif

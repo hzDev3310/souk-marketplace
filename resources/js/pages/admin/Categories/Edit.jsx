@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '@/lib/api';
+import { imageFallback } from '@/utils/imageFallback';
 import CardBox from '@/components/shared/CardBox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -229,7 +230,7 @@ const CategoryEdit = () => {
                                 <div className="relative border-2 border-dashed border-border/50 rounded-2xl p-6 text-center hover:bg-muted/50 transition-colors cursor-pointer h-32">
                                     <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
                                     {coverPreview ? (
-                                        <img src={coverPreview} alt="Cover preview" className="w-full h-full object-cover rounded-xl" />
+                                        <img src={coverPreview} alt="Cover preview" className="w-full h-full object-cover rounded-xl" onError={imageFallback} />
                                     ) : (
                                         <ImagePlus className="w-8 h-8 mx-auto text-muted-foreground mt-8" />
                                     )}

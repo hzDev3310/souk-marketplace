@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '@/lib/api';
+import { imageFallback } from '@/utils/imageFallback';
 import CardBox from '@/components/shared/CardBox';
 import AdminPageLayout from '@/components/shared/AdminPageLayout';
 import Modal from '@/components/shared/Modal';
@@ -795,7 +796,7 @@ const ProductForm = () => {
                                     <div className="grid grid-cols-3 gap-2">
                                         {existingImages.map((img, idx) => (
                                             <div key={img.id} className="relative group rounded-xl overflow-hidden border-2 border-border/50 aspect-square">
-                                                <img src={img.file} className="w-full h-full object-cover" alt={`Product ${idx + 1}`} />
+                                                <img src={img.file} className="w-full h-full object-cover" alt={`Product ${idx + 1}`} onError={imageFallback} />
                                                 <button
                                                     type="button"
                                                     onClick={() => handleRemoveExistingImage(idx)}
@@ -818,7 +819,7 @@ const ProductForm = () => {
                                     <div className="grid grid-cols-3 gap-2">
                                         {previews.map((src, idx) => (
                                             <div key={idx} className="relative group rounded-xl overflow-hidden border-2 border-border/50 aspect-square">
-                                                <img src={src} className="w-full h-full object-cover" alt={`New Preview ${idx + 1}`} />
+                                                <img src={src} className="w-full h-full object-cover" alt={`New Preview ${idx + 1}`} onError={imageFallback} />
                                                 <button
                                                     type="button"
                                                     onClick={() => handleRemoveNewImage(idx)}

@@ -27,7 +27,7 @@
                         src="{{ image_url($image->image_path) }}"
                         alt="{{ $title }}"
                         class="w-full h-48 object-cover rounded-2xl"
-                        onerror="this.src='https://media.wallmantra.com/product/original/product_placeholder.webp'"
+                        onerror="this.onerror=null; this.src='/images/default-placeholder.png';"
                     >
                 @endforeach
             </div>

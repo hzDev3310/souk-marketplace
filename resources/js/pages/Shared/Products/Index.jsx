@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
+import { imageFallback } from '@/utils/imageFallback';
 import AdminPageLayout from '@/components/shared/AdminPageLayout';
 import CardBox from '@/components/shared/CardBox';
 
@@ -50,6 +51,7 @@ const ProductList = () => {
                     ? payload.data
                     : [];
             setProducts(list);
+            console.log('Fetched products:', list);
         } catch (error) {
             console.error('Error fetching products:', error);
         } finally {
@@ -101,6 +103,27 @@ const ProductList = () => {
         } catch (error) {
             console.error('Error updating product:', error);
         }
+    };
+
+    const getProductImageUrl = (product) => {
+        const album = product?.albums?.find((entry) => entry?.file) || product?.albums?.[0];
+        const candidate = album?.file || album?.imageUrl || product?.imageUrl || '/storage/empty/empty.webp';
+
+        if (!candidate || candidate === 'null' || candidate === 'undefined') {
+            return '/storage/empty/empty.webp';
+        }
+
+        if (candidate.startsWith('http') || candidate.startsWith('/')) {
+            return candidate;
+        }
+
+        return `/storage/${candidate.replace(/^storage\//, '').replace(/^\//, '')}`;
+    };
+
+    const getStoreLogoUrl = (logo) => {
+        if (!logo || logo === 'null' || logo === 'undefined') return null;
+        if (logo.startsWith('http') || logo.startsWith('/')) return logo;
+        return `/storage/${logo.replace(/^storage\//, '').replace(/^\//, '')}`;
     };
 
     const getStockStatus = (stock) => {
@@ -177,15 +200,39 @@ const ProductList = () => {
                             <div key={product.id} className="bg-card border border-border/60 rounded-[24px] p-5 space-y-4 shadow-sm active:scale-[0.98] transition-transform">
                                 <div className="flex items-start gap-3">
                                     <div className="w-12 h-12 rounded-2xl bg-muted overflow-hidden flex items-center justify-center border border-border/50">
-                                        {product.albums && product.albums.length > 0 ? (
-                                            <img src={product.albums[0].imageUrl || product.albums[0].file} alt="" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <img src="/storage/empty/empty.webp" alt="" className="w-full h-full object-cover" />
-                                        )}
+                                        <img
+                                            src={getProductImageUrl(product)}
+                                            alt=""
+                                            className="w-full h-full object-cover"
+                                            onError={imageFallback}
+                                        />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h3 className="font-black text-foreground tracking-tight leading-none mb-1 truncate">{product.name_fr}</h3>
                                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{product.slug}</p>
+                                        {product.store && (
+                                            <button
+                                                type="button"
+                                                onClick={() => navigate(`/dashboard/stores/${product.store.id ?? product.store_id ?? product.store?.id}`, { state: { store: product.store, products: products.filter((item) => (item.store_id ?? item.store?.id) === (product.store.id ?? product.store_id ?? product.store?.id)) } })}
+                                                className="mt-2 inline-flex items-center gap-2 rounded-full border border-border/50 bg-card px-2 py-1 hover:border-primary/60 transition-colors text-left"
+                                            >
+                                                {product.store.logo ? (
+                                                    <img
+                                                        src={getStoreLogoUrl(product.store.logo)}
+                                                        alt={product.store.name_fr || product.store.name_en || 'Store'}
+                                                        className="w-6 h-6 rounded-full object-cover border border-border/50"
+                                                        onError={imageFallback}
+                                                    />
+                                                ) : (
+                                                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[9px] font-black">
+                                                        {(product.store.name_fr || product.store.name_en || 'S').charAt(0).toUpperCase()}
+                                                    </div>
+                                                )}
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-foreground">
+                                                    {product.store.name_fr || product.store.name_en || 'Store'}
+                                                </span>
+                                            </button>
+                                        )}
                                     </div>
                                     <Switch size="sm" color="success" checked={product.isActive} onCheckedChange={() => handleToggleActive(product)} />
                                 </div>
@@ -282,7 +329,7 @@ const ProductList = () => {
                                             <div className="flex items-center gap-3">
                                                 <div className="w-11 h-11 rounded-xl bg-muted overflow-hidden flex items-center justify-center border border-border/50 shrink-0">
                                                     {product.albums && product.albums.length > 0 ? (
-                                                        <img src={product.albums[0].imageUrl || product.albums[0].file} alt="" className="w-full h-full object-cover" />
+                                                        <img src={getProductImageUrl(product)} alt="" className="w-full h-full object-cover" onError={imageFallback} />
                                                     ) : (
                                                         <ImageIcon size={18} className="text-muted-foreground" />
                                                     )}
@@ -295,7 +342,29 @@ const ProductList = () => {
                                         </TableCell>
                                         {isAdmin && (
                                             <TableCell className="py-4 px-6">
-                                                <p className="text-sm font-bold text-foreground truncate">{product.store?.name_fr || product.store?.name_en || '—'}</p>
+                                                {product.store ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => navigate(`/dashboard/stores/${product.store.id ?? product.store_id ?? product.store?.id}`, { state: { store: product.store, products: products.filter((item) => (item.store_id ?? item.store?.id) === (product.store.id ?? product.store_id ?? product.store?.id)) } })}
+                                                        className="inline-flex items-center gap-2 max-w-full hover:text-primary transition-colors text-left"
+                                                    >
+                                                        {product.store.logo ? (
+                                                            <img
+                                                                src={getStoreLogoUrl(product.store.logo)}
+                                                                alt={product.store.name_fr || product.store.name_en || 'Store'}
+                                                                className="w-8 h-8 rounded-full object-cover border border-border/50"
+                                                                onError={imageFallback}
+                                                            />
+                                                        ) : (
+                                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-black">
+                                                                {(product.store.name_fr || product.store.name_en || 'S').charAt(0).toUpperCase()}
+                                                            </div>
+                                                        )}
+                                                        <span className="text-sm font-bold text-foreground truncate">{product.store.name_fr || product.store.name_en || '—'}</span>
+                                                    </button>
+                                                ) : (
+                                                    <p className="text-sm font-bold text-foreground truncate">—</p>
+                                                )}
                                             </TableCell>
                                         )}
                                         <TableCell className="py-4 px-6">
@@ -336,6 +405,7 @@ const ProductList = () => {
                     </Table>
                 </CardBox>
             </div>
+
         </AdminPageLayout>
     );
 };

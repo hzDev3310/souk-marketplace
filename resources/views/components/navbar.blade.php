@@ -10,7 +10,7 @@
                     <div
                         class="relative w-11 h-11 rounded-2xl overflow-hidden flex items-center justify-center shadow-lg shadow-purple-500/25 group-hover:scale-105 transition-transform duration-300 bg-white dark:bg-slate-800">
                         <img src="/images/logo.png" alt="Souk AI"
-                            class="w-full h-full object-cover">
+                            class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/images/default-placeholder.png';">
                       
                     </div>
                     <span

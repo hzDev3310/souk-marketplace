@@ -6,6 +6,7 @@ import {
   CreditCard, Receipt, Percent, Box
 } from 'lucide-react';
 import api from '@/lib/api';
+import { imageFallback } from '@/utils/imageFallback';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import AdminPageLayout from '@/components/shared/AdminPageLayout';
@@ -373,7 +374,7 @@ const OrderDetails = () => {
                                                     <TableCell className="py-4 px-6">
                                                         <div className="flex items-center gap-4">
                                                             <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden flex-shrink-0">
-                                                                <img src={getProductImageUrl(item.product)} className="w-full h-full object-cover" alt="" />
+                                                                <img src={getProductImageUrl(item.product)} className="w-full h-full object-cover" alt="" onError={imageFallback} />
                                                             </div>
                                                             <div className="min-w-0">
                                                                 <p className="font-bold text-sm text-foreground truncate">{item.product?.name_fr || item.product?.name_en || item.product?.name_ar || 'Product'}</p>
@@ -389,7 +390,7 @@ const OrderDetails = () => {
                                                                 <div className="flex items-center gap-3">
                                                                     <div className="w-9 h-9 rounded-xl bg-muted overflow-hidden flex-shrink-0 flex items-center justify-center">
                                                                         {storeLogoUrl(item.product.store.logo) ? (
-                                                                            <img src={storeLogoUrl(item.product.store.logo)} className="w-full h-full object-cover" alt="" />
+                                                                            <img src={storeLogoUrl(item.product.store.logo)} className="w-full h-full object-cover" alt="" onError={imageFallback} />
                                                                         ) : (
                                                                             <Store size={16} className="text-muted-foreground" />
                                                                         )}

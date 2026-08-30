@@ -3,6 +3,7 @@ import CardBox from '@/components/shared/CardBox';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
+import { imageFallback } from '@/utils/imageFallback';
 import {
   TrendingUp,
   Users,
@@ -420,7 +421,7 @@ const Dashboard = () => {
                           src={product.image}
                           alt=""
                           className="w-full h-full object-cover"
-                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          onError={imageFallback}
                         />
                       ) : (
                         product.name.charAt(0)

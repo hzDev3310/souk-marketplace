@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
+import { imageFallback } from '@/utils/imageFallback';
 import CardBox from "@/components/shared/CardBox";
 import AdminPageLayout from "@/components/shared/AdminPageLayout";
 import { Button } from "@/components/ui/button";
@@ -531,9 +532,7 @@ const Orders = () => {
                                                                         <img
                                                                             src={item.product?.albums?.find((album) => album?.file)?.file || item.product?.albums?.[0]?.file || item.product?.albums?.[0]?.imageUrl || item.product?.imageUrl || '/storage/empty/empty.webp'}
                                                                             className="w-full h-full object-cover"
-                                                                            onError={(e) => {
-                                                                                e.currentTarget.src = '/storage/empty/empty.webp';
-                                                                            }}
+                                                                            onError={imageFallback}
                                                                         />
                                                                     </div>
                                                                     <div className="text-start">

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '@/context/ThemeContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/context/AuthContext';
+import { imageFallback } from '@/utils/imageFallback';
 import { useTranslation } from 'react-i18next';
 import SidebarContent from './SidebarItems';
 import * as Icons from 'lucide-react';
@@ -69,7 +70,7 @@ const Sidebar = ({ onClose }) => {
       <div className="flex items-center h-24 px-8">
         <Link to="/" className="flex items-center gap-3 group">
           <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-lg shadow-primary/20 group-hover:rotate-12 transition-transform duration-500 bg-card flex items-center justify-center">
-            <img src="/images/logo.png" alt="Souk AI" className="w-full h-full object-cover" />
+            <img src="/images/logo.png" alt="Souk AI" className="w-full h-full object-cover" onError={imageFallback} />
           </div>
           <div className="flex flex-col">
             <span className="text-xl font-black text-foreground tracking-tighter">

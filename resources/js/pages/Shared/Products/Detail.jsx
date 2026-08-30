@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Activity, ArrowLeft, Box, Pencil, Package, ShieldCheck, BadgeCheck } from 'lucide-react';
 import api from '@/lib/api';
+import { imageFallback } from '@/utils/imageFallback';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import AdminPageLayout from '@/components/shared/AdminPageLayout';
@@ -21,6 +22,12 @@ const getProductImageUrl = (product) => {
     }
 
     return `/storage/${candidate.replace(/^storage\//, '').replace(/^\//, '')}`;
+};
+
+const getStoreLogoUrl = (logo) => {
+    if (!logo || logo === 'null' || logo === 'undefined') return null;
+    if (logo.startsWith('http') || logo.startsWith('/')) return logo;
+    return `/storage/${logo.replace(/^storage\//, '').replace(/^\//, '')}`;
 };
 
 const ProductDetail = () => {
@@ -100,7 +107,7 @@ const ProductDetail = () => {
                                 src={activeImage}
                                 alt={displayName}
                                 className="w-full h-full object-cover"
-                                onError={(e) => { e.currentTarget.src = '/storage/empty/empty.webp'; }}
+                                onError={imageFallback}
                             />
                             {product.promo > 0 && (
                                 <span className="absolute top-6 left-6 px-3 py-1.5 bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-lg">
@@ -128,7 +135,7 @@ const ProductDetail = () => {
                                                 src={url}
                                                 className="w-full h-full object-cover"
                                                 alt=""
-                                                onError={(e) => { e.currentTarget.src = '/storage/empty/empty.webp'; }}
+                                                onError={imageFallback}
                                             />
                                         </div>
                                     );
@@ -142,11 +149,15 @@ const ProductDetail = () => {
                         <div className="space-y-4">
                             <div className="flex items-center justify-between flex-wrap gap-3">
                                 <div className="flex items-center gap-3 flex-wrap">
-                                    {isAdmin && (
-                                        <span className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest rounded-full">
-                                            {product.store?.name_fr || product.store?.name_en || 'Store'}
-                                        </span>
-                                    )}
+                                    <Button
+                                        variant="outlinemuted"
+                                        size="sm"
+                                        onClick={() => navigate('/dashboard/products')}
+                                        className="rounded-full font-black uppercase tracking-widest text-[10px]"
+                                    >
+                                        <ArrowLeft size={14} strokeWidth={2.5} />
+                                        Return
+                                    </Button>
                                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                                         ID: {String(product.id).substring(0, 8)}
                                     </span>
@@ -155,6 +166,31 @@ const ProductDetail = () => {
                                     </span>
                                 </div>
                             </div>
+
+                            {product.store && (
+                                <a
+                                    href={product.store.slug ? `/store/${product.store.slug}` : '#'}
+                                    target={product.store.slug ? '_blank' : undefined}
+                                    rel={product.store.slug ? 'noreferrer' : undefined}
+                                    className="inline-flex items-center gap-3 w-fit rounded-full border border-border/50 bg-card px-3 py-2 shadow-sm hover:border-primary/60 transition-colors"
+                                >
+                                    {product.store.logo ? (
+                                        <img
+                                            src={getStoreLogoUrl(product.store.logo)}
+                                            alt={product.store.name_fr || product.store.name_en || 'Store'}
+                                            className="w-10 h-10 rounded-full object-cover border border-border/50"
+                                            onError={imageFallback}
+                                        />
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-black">
+                                            {(product.store.name_fr || product.store.name_en || 'S').charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-foreground">
+                                        {product.store.name_fr || product.store.name_en || 'Store'}
+                                    </span>
+                                </a>
+                            )}
 
                             <h1 className="text-3xl lg:text-5xl font-black text-foreground tracking-tight leading-tight">
                                 {displayName}

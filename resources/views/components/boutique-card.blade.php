@@ -11,7 +11,7 @@
     @if(data_get($store, 'cover'))
     <div class="h-32 overflow-hidden bg-muted/20 relative">
         <img src="{{ image_url(data_get($store, 'cover')) }}" alt="" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-            onerror="this.onerror=null; this.src='https://media.wallmantra.com/product/original/product_placeholder.webp';">
+            onerror="this.onerror=null; this.src='/images/default-placeholder.png';">
         <div class="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
     </div>
     @else
@@ -25,7 +25,7 @@
             <div class="absolute -top-14 left-0">
                 @if(data_get($store, 'logo'))
                     <img src="{{ image_url(data_get($store, 'logo')) }}" alt="" class="w-20 h-20 rounded-[24px] object-cover border-4 border-card bg-card shadow-xl group-hover:rotate-12 transition-transform duration-500"
-                        onerror="this.onerror=null; this.src='https://media.wallmantra.com/product/original/product_placeholder.webp';">
+                        onerror="this.onerror=null; this.src='/images/default-placeholder.png';">
                 @else
                     <div class="w-20 h-20 rounded-[24px] bg-primary/10 flex items-center justify-center text-primary font-black border-4 border-card bg-card shadow-xl group-hover:rotate-12 transition-transform duration-500 text-3xl">
                         {{ substr($localeName, 0, 1) }}

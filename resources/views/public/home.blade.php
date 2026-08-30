@@ -26,12 +26,12 @@
                     data-hero-slide="{{ $index }}"
                     alt="{{ $slide->{'name_' . app()->getLocale()} }}"
                     class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 {{ $index === 0 ? 'opacity-100' : 'opacity-0' }}"
-                    onerror="this.onerror=null; this.style.display='none';">
+                    onerror="this.onerror=null; this.src='/images/default-placeholder.png';">
             @endforeach
         @else
             <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop"
                 class="absolute inset-0 w-full h-full object-cover"
-                onerror="this.onerror=null; this.src='https://media.wallmantra.com/product/original/product_placeholder.webp';">
+                onerror="this.onerror=null; this.src='/images/default-placeholder.png';">
         @endif
 
         <div class="relative z-20 h-full flex flex-col justify-center items-start px-6 sm:px-12 md:px-24 max-w-4xl space-y-6 md:space-y-8">

@@ -20,7 +20,7 @@
             @if($category->cover)
                 <img src="{{ image_url($category->cover) }}" alt="{{ $category->{'name_'.app()->getLocale()} }}"
                     class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    onerror="this.onerror=null; this.style.display='none';">
+                    onerror="this.onerror=null; this.src='/images/default-placeholder.png';">
             @endif
 
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 group-hover:from-primary/80 group-hover:via-primary/40 transition-all duration-500"></div>
@@ -30,7 +30,7 @@
                     @if($category->icon)
                         @if(str_starts_with($category->icon, 'http') || file_exists(public_path($category->icon)))
                             <img src="{{ image_url($category->icon) }}" alt="" class="w-10 h-10 object-contain"
-                                onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                onerror="this.onerror=null; this.src='/images/default-placeholder.png';">
                             <span style="display:none" class="text-white">{!! lucide_icon($category->icon, 'w-10 h-10') !!}</span>
                         @else
                             <span class="text-white">{!! lucide_icon($category->icon, 'w-10 h-10') !!}</span>

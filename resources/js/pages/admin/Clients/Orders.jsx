@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '@/lib/api';
+import { imageFallback } from '@/utils/imageFallback';
 import CardBox from '@/components/shared/CardBox';
 import AdminPageLayout from '@/components/shared/AdminPageLayout';
 import { Button } from '@/components/ui/button';
@@ -236,9 +237,9 @@ const ClientOrders = () => {
                                                                     <div key={item.id || item.product?.id} className="flex items-center gap-3 p-3 bg-muted/5">
                                                                         <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden flex-shrink-0">
                                                                             {item.product?.albums?.[0] ? (
-                                                                                <img src={item.product.albums[0].file} className="w-full h-full object-cover" alt="" />
+                                                                                <img src={item.product.albums[0].file} className="w-full h-full object-cover" alt="" onError={imageFallback} />
                                                                             ) : (
-                                                                                <img src="/storage/empty/empty.webp" className="w-full h-full object-cover" alt="" />
+                                                                                <img src="/storage/empty/empty.webp" className="w-full h-full object-cover" alt="" onError={imageFallback} />
                                                                             )}
                                                                         </div>
                                                                         <div className="flex-1 min-w-0">
