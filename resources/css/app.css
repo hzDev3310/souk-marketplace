@@ -127,10 +127,6 @@ input:-webkit-autofill:active {
     border-radius: var(--radius);
 }
 
-button {
-    border-radius: 12px;
-}
-
 .nav-item {
     position: relative;
     transition: color 0.3s ease;
@@ -190,21 +186,21 @@ aside {
 }
 
 /* Capsule Navbar — base state (JS drives the scroll interpolation) */
-#navbar-shell {
+.souk-navbar #navbar-shell {
     will-change: margin-top, border-radius, max-width, box-shadow, background;
 }
 
 /* Search Pill — Segmented Layout with Concave Cut */
-.search-pill {
+.souk-navbar .search-pill {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
 }
 
-.search-pill-left {
+.souk-navbar .search-pill-left {
     position: relative;
     overflow: visible;
 }
 
-.search-pill-left::after {
+.souk-navbar .search-pill-left::after {
     content: '';
     position: absolute;
     right: -6px;
@@ -212,22 +208,26 @@ aside {
     transform: translateY(-50%);
     width: 14px;
     height: 30px;
-    background: white;
+    background: #f1f5f9;
     border-radius: 50%;
     z-index: 2;
 }
 
-.dark .search-pill-left::after {
+.dark .souk-navbar .search-pill-left::after {
     background: #1e293b;
 }
 
-.search-pill-middle {
+[dir='rtl'] .souk-navbar .search-pill-left::after {
+    right: auto;
+    left: -6px;
+}
+
+.souk-navbar .search-pill-middle {
     background: white;
     border-radius: 0;
     z-index: 1;
 }
 
-.dark .search-pill-middle {
+.dark .souk-navbar .search-pill-middle {
     background: #1e293b;
 }
-

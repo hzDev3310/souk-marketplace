@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\HandlesFileUploads;
 use App\Models\Store;
+use App\Mail\StoreAccountCreated;
 use App\Services\UserService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -223,7 +226,24 @@ class UserManagementController extends Controller
         $data = $this->persistStoreImages($data, $request);
         
         $user = $this->userService->createStore($data);
-        return response()->json(['message' => 'Store created successfully', 'data' => $user], 201);
+        $emailSent = true;
+
+        try {
+            Mail::to($user->email)->send(new StoreAccountCreated($user, $request->string('password')->toString()));
+        } catch (\Throwable $exception) {
+            $emailSent = false;
+            Log::warning('Store account email could not be sent.', [
+                'store_user_id' => $user->id,
+                'recipient' => $user->email,
+                'exception' => $exception->getMessage(),
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Store created successfully',
+            'data' => $user,
+            'email_sent' => $emailSent,
+        ], 201);
     }
     
     public function updateStore(Request $request, $id)

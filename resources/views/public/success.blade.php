@@ -14,7 +14,7 @@
             <h1 class="text-6xl font-black text-foreground tracking-tighter">{{ __('website.success.title') }}</h1>
             <p class="text-xl text-muted-foreground font-medium max-w-lg mx-auto leading-relaxed">
                 {{ __('website.success.message') }}
-                @foreach($orders as $order)<span class="text-primary font-black">#{{ $order->id }}</span>@if(!$loop->last), @endif
+                @foreach($orders as $order)<span class="text-primary font-black">#{{ $order->order_number }}</span>@if(!$loop->last), @endif
                 @endforeach
                 {{ __('website.success.status') }}
             </p>
@@ -26,23 +26,18 @@
             <p class="text-sm text-muted-foreground">{{ __('website.success.emailsent') }}</p>
         </div>
 
-@if(session('guest_temp_password'))
-        @php $tempPassword = session('guest_temp_password'); @endphp
-        <div class="p-8 glass border border-primary/20 rounded-[40px] mb-12 text-left space-y-4 premium-shadow">
-            <h3 class="text-xl font-black text-foreground flex items-center gap-3">
-                 <span class="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                 </span>
-                 {{ __('website.success.welcome') }}
-            </h3>
-            <p class="text-sm font-bold text-muted-foreground">
-                {{ __('website.success.guestWelcome') }}
-            </p>
-            <div class="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
-                <p class="text-xs font-black uppercase tracking-widest text-green-600 mb-2">Your Temporary Password</p>
-                <p class="text-2xl font-black text-green-600 font-mono">{{ $tempPassword }}</p>
+@if(session('guest_mail_error'))
+            <div class="p-4 mb-8 rounded-2xl border border-red-200 bg-red-50 text-left">
+                <p class="text-xs font-black uppercase tracking-[0.2em] text-red-600 mb-2">Email delivery warning</p>
+                <p class="text-sm text-red-700">{{ session('guest_mail_error') }}</p>
             </div>
-        </div>
+        @endif
+
+        @if(session('order_mail_error'))
+            <div class="p-4 mb-8 rounded-2xl border border-red-200 bg-red-50 text-left">
+                <p class="text-xs font-black uppercase tracking-[0.2em] text-red-600 mb-2">Email delivery warning</p>
+                <p class="text-sm text-red-700">{{ session('order_mail_error') }}</p>
+            </div>
         @endif
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center">

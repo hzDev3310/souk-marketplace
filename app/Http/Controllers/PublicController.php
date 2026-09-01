@@ -8,15 +8,22 @@ use App\Models\User;
 use App\Models\Client;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Mail\GuestAccountCreated;
+use App\Mail\SendOtpCode;
+use App\Models\OtpCode;
 use App\Models\Page;
 use App\Models\ContactSetting;
 
 use App\Models\Store;
 use App\Services\ProductSemanticSearchService;
+use App\Services\OrderNotificationService;
+use App\Services\SearchQueryNormalizer;
 // Product variants removed from public storefront logic.
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -195,26 +202,18 @@ class PublicController extends Controller
 
         $products = null;
 
-        if (filled($query) && $searchMode === 'semantic') {
-            // AI-Powered Semantic Search:
-            // This uses vector embeddings (via Gemini API) to understand the context and meaning of the search query,
-            // allowing it to find relevant products even if they don't contain the exact keywords.
-            $semanticResults = app(ProductSemanticSearchService::class)->search($query, clone $baseQuery);
+        if (filled($query)) {
+            $normalizedQuery = app(SearchQueryNormalizer::class)->normalize($query);
+            $semanticResults = app(ProductSemanticSearchService::class)->search($normalizedQuery, clone $baseQuery);
 
             if ($semanticResults->isNotEmpty()) {
                 $page = LengthAwarePaginator::resolveCurrentPage();
                 $items = $semanticResults->slice(($page - 1) * $perPage, $perPage)->values();
 
-                $products = new LengthAwarePaginator(
-                    $items,
-                    $semanticResults->count(),
-                    $perPage,
-                    $page,
-                    [
-                        'path' => $request->url(),
-                        'query' => $request->query(),
-                    ]
-                );
+                $products = new LengthAwarePaginator($items, $semanticResults->count(), $perPage, $page, [
+                    'path' => $request->url(),
+                    'query' => $request->query(),
+                ]);
             }
         }
 
@@ -393,12 +392,142 @@ class PublicController extends Controller
         return view('public.checkout', compact('cart', 'zoneGroups', 'total', 'categories'));
     }
 
+    public function sendOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'address' => 'required|string',
+            'city' => 'required|string',
+            'postal_code' => 'required|string',
+            'lat' => 'required',
+            'lon' => 'required',
+        ]);
+
+        $email = strtolower(trim($request->email));
+
+        if (Auth::guard('web')->check()) {
+            // Already logged in — skip verification and place the order directly.
+            return $this->processCheckout($request);
+        }
+
+        $existing = User::where('email', $email)->first();
+
+        if (!$existing) {
+            // New user — create the account, send password, and place the order directly.
+            return $this->processCheckout($request);
+        }
+
+        $code = (string) random_int(100000, 999999);
+
+        OtpCode::where('email', $email)->where('used', false)->update(['used' => true]);
+
+        OtpCode::create([
+            'email' => $email,
+            'code' => Hash::make($code),
+            'expires_at' => now()->addMinutes(10),
+        ]);
+
+        $otpId = OtpCode::where('email', $email)->latest()->value('id');
+
+        try {
+            Mail::to($email)->send(new SendOtpCode($email, $code));
+            session()->forget('otp_mail_error');
+        } catch (\Throwable $e) {
+            Log::error('OTP email failed: ' . $e->getMessage(), [
+                'email' => $email,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            session()->put('otp_mail_error', 'SMTP error: ' . $e->getMessage());
+        }
+
+        session()->put('checkout_pending', [
+            'email' => $email,
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'address' => $request->address,
+            'city' => $request->city,
+            'postal_code' => $request->postal_code,
+            'lat' => $request->lat,
+            'lon' => $request->lon,
+            'otp_id' => $otpId,
+        ]);
+
+        return redirect()->route('public.checkout.verify');
+    }
+
+    public function showOtpVerify()
+    {
+        $pending = session()->get('checkout_pending');
+
+        if (!$pending || empty(session()->get('cart', []))) {
+            return redirect()->route('public.checkout');
+        }
+
+        $categories = Category::where('isActive', true)->whereNull('parent_id')->get();
+
+        return view('public.otp-verify', [
+            'pending' => $pending,
+            'email' => $pending['email'],
+            'categories' => $categories,
+        ]);
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'otp' => 'required|string|size:6',
+            'otp_id' => 'required|integer',
+        ]);
+
+        $pending = session()->get('checkout_pending');
+
+        if (!$pending || (int) $pending['otp_id'] !== (int) $request->otp_id) {
+            return back()->withErrors(['otp' => 'Your session has expired. Please try again.']);
+        }
+
+        $otp = OtpCode::where('id', $request->otp_id)
+            ->where('email', $pending['email'])
+            ->where('used', false)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$otp || !Hash::check($request->otp, $otp->code)) {
+            return back()->withErrors(['otp' => 'Invalid or expired verification code.']);
+        }
+
+        $otp->update(['used' => true]);
+
+        $user = User::where('email', $pending['email'])->first();
+
+        if (!$user) {
+            session()->forget('checkout_pending');
+            return redirect()->route('public.checkout')->with('info', 'Account not found. Please try again.');
+        }
+
+        Auth::guard('web')->login($user, true);
+
+        $request->merge([
+            'email' => $pending['email'],
+            'first_name' => $pending['first_name'],
+            'last_name' => $pending['last_name'],
+            'address' => $pending['address'],
+            'city' => $pending['city'],
+            'postal_code' => $pending['postal_code'],
+            'lat' => $pending['lat'],
+            'lon' => $pending['lon'],
+        ]);
+
+        return $this->processCheckout($request);
+    }
+
     public function processCheckout(Request $request)
     {
         $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|email'.(Auth::check() ? '' : '|unique:users,email'),
+            'email' => 'required|email',
             'address' => 'required|string',
             'city' => 'required|string',
             'postal_code' => 'required|string',
@@ -410,21 +539,30 @@ class PublicController extends Controller
         if(empty($cart)) return redirect()->route('home');
 
         return DB::transaction(function() use ($request, $cart) {
-            if(Auth::check()) {
-                $user = Auth::user();
+            if(Auth::guard('web')->check()) {
+                $user = Auth::guard('web')->user();
             } else {
-                $password = strval(random_int(1, 99999999));
+                $password = Str::upper(Str::random(8));
                 $user = User::create([
                     'name' => $request->first_name,
                     'family_name' => $request->last_name,
-                    'email' => $request->email,
+                    'email' => strtolower(trim($request->email)),
                     'password' => Hash::make($password),
                     'role' => 'CLIENT'
                 ]);
-                
-                Auth::login($user, true);
-                
-                session()->put('guest_temp_password', $password);
+
+                try {
+                    Mail::to($user->email)->send(new GuestAccountCreated($user, $password));
+                    session()->forget('guest_mail_error');
+                } catch (\Throwable $e) {
+                    Log::error('Guest account email failed: ' . $e->getMessage(), [
+                        'email' => $user->email,
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                    session()->put('guest_mail_error', 'SMTP error: ' . $e->getMessage());
+                }
+
+                Auth::guard('web')->login($user, true);
             }
 
             $client = Client::updateOrCreate(
@@ -491,7 +629,21 @@ class PublicController extends Controller
                 $orders[] = $order;
             }
 
+            foreach ($orders as $order) {
+                $order->load('items.product');
+            }
+
+            $locale = app()->getLocale();
+            DB::afterCommit(function () use ($orders, $locale) {
+                $notifications = app(OrderNotificationService::class);
+
+                foreach ($orders as $order) {
+                    $notifications->orderPlaced($order, $locale);
+                }
+            });
+
             session()->forget('cart');
+            session()->forget('checkout_pending');
 
             return view('public.success', [
                 'orders' => $orders,
@@ -683,7 +835,7 @@ class PublicController extends Controller
             ])->onlyInput('email');
         }
 
-        Auth::login($user, $request->boolean('remember'));
+        Auth::guard('web')->login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
         return redirect()->intended(route('home'));
@@ -715,14 +867,14 @@ class PublicController extends Controller
             'user_id' => $user->id,
         ]);
 
-        Auth::login($user);
+        Auth::guard('web')->login($user);
 
         return redirect()->route('home');
     }
 
     public function logout(Request $request)
     {
-        Auth::logout();
+        Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect()->route('home');
@@ -730,7 +882,7 @@ class PublicController extends Controller
 
     public function profile()
     {
-        $user = Auth::user();
+        $user = Auth::guard('web')->user();
         $client = $user->client;
         $categories = Category::where('isActive', true)->whereNull('parent_id')->get();
         return view('public.profile', compact('user', 'client', 'categories'));
@@ -746,7 +898,7 @@ class PublicController extends Controller
             'codePostal' => 'required|string',
         ]);
 
-        $user = Auth::user();
+        $user = Auth::guard('web')->user();
         $user->update([
             'name' => $request->name,
             'family_name' => $request->family_name,
@@ -766,7 +918,7 @@ class PublicController extends Controller
 
     public function orders()
     {
-        $user = Auth::user();
+        $user = Auth::guard('web')->user();
         $clientId = $user->client?->id;
         $orders = $clientId
             ? Order::where('client_id', $clientId)->with('items.product')->latest()->get()
@@ -774,4 +926,20 @@ class PublicController extends Controller
         $categories = Category::where('isActive', true)->whereNull('parent_id')->get();
         return view('public.orders', compact('orders', 'categories'));
     }
+
+    public function cancelOrder(Order $order)
+    {
+        if ($order->client_id !== auth()->user()->client->id || $order->status !== 'en_attente') {
+            return back()->withErrors(['order' => 'Cannot cancel this order.']);
+        }
+
+        $previousStatus = $order->status;
+        $order->update(['status' => 'annule']);
+        $order->items()->update(['status' => 'CANCELLED']);
+        $order->refresh();
+        app(OrderNotificationService::class)->statusChanged($order, $previousStatus, app()->getLocale());
+
+        return back()->with('success', 'Order cancelled successfully.');
+    }
+
 }

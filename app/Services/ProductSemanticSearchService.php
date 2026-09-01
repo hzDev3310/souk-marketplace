@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\GenerateProductEmbedding;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductSearchEmbedding;
@@ -12,9 +13,7 @@ use Throwable;
 
 class ProductSemanticSearchService
 {
-    public function __construct(
-        private GeminiEmbeddingService $embeddingService
-    ) {}
+    public function __construct(private GeminiEmbeddingService $embeddingService) {}
 
     public function isEnabled(): bool
     {
@@ -23,155 +22,130 @@ class ProductSemanticSearchService
 
     public function search(string $query, Builder $baseQuery): Collection
     {
-        return $this->debugSearch($query, $baseQuery)
-            ->pluck('product')
-            ->values();
+        return $this->debugSearch($query, $baseQuery)->pluck('product')->values();
     }
 
+    /** A Gemini outage never prevents keyword/fuzzy results from being returned. */
     public function debugSearch(string $query, Builder $baseQuery): Collection
     {
         $query = trim($query);
         if ($query === '') return collect();
 
-        try {
-            // 1. Fetch products from DB
-            $products = $baseQuery->with(['store', 'albums'])->get();
-            if ($products->isEmpty()) return collect();
+        $products = $baseQuery->with('store')->get();
+        if ($products->isEmpty()) return collect();
 
-            $categoryMap = $this->buildCategoryMap($products);
-            $tokens = $this->tokens($query);
+        $categoryMap = $this->buildCategoryMap($products);
+        $tokens = $this->tokens($query);
+        $embeddings = ProductSearchEmbedding::whereIn('product_id', $products->pluck('id'))->get()->keyBy('product_id');
+        $this->queueMissingEmbeddings($products, $categoryMap, $embeddings);
 
-            $queryEmbedding = [];
-            $embeddings = collect();
-
-            // 2. AI Logic
-            if ($this->isEnabled()) {
-                try {
-                    $embeddings = $this->ensureEmbeddings($products, $categoryMap);
-                    $queryEmbedding = $this->embeddingService->embedQuery($query);
-                } catch (Throwable $aiException) {
-                    // Report AI failure but allow keyword fallback
-                    $this->safeReport($aiException);
-                }
+        $queryEmbedding = [];
+        if ($this->isEnabled()) {
+            try {
+                $queryEmbedding = $this->embeddingService->embedQuery($query);
+            } catch (Throwable $exception) {
+                $this->safeReport($exception);
             }
-
-            // 3. Scoring
-            return $products
-                ->map(function (Product $product) use ($embeddings, $queryEmbedding, $tokens, $categoryMap) {
-                    $document = $this->buildSearchDocument($product, $categoryMap);
-                    $keywordScore = $this->keywordScore($tokens, $document);
-                    
-                    $semanticScore = 0.0;
-                    if (!empty($queryEmbedding)) {
-                        $embeddingRow = $embeddings->get($product->id);
-                        if ($embeddingRow && !empty($embeddingRow->embedding)) {
-                            $semanticScore = $this->cosineSimilarity($queryEmbedding, $embeddingRow->embedding);
-                        }
-                    }
-
-                    // Weighted Score
-                    $score = !empty($queryEmbedding) 
-                        ? ($semanticScore * 0.82) + ($keywordScore * 0.18)
-                        : $keywordScore;
-
-                    return [
-                        'product' => $product,
-                        'score' => $score,
-                        'semantic_score' => $semanticScore,
-                        'keyword_score' => $keywordScore,
-                    ];
-                })
-                ->filter(fn ($row) => $row['score'] > 0.05)
-                ->sortByDesc('score')
-                ->values();
-
-        } catch (Throwable $e) {
-            // Crucial: Throwing the error so the Controller knows something went wrong
-            $this->safeReport($e);
-            throw $e; 
         }
-    }
 
-    /**
-     * Reports an error but catches secondary errors (like Permission Denied on log files)
-     */
-    private function safeReport(Throwable $e)
-    {
-        try {
-            report($e);
-        } catch (Throwable $logFailure) {
-            // If we can't log to file, we print to stderr for Docker logs
-            error_log("Critical: Logging failed: " . $e->getMessage());
-        }
-    }
+        $priceCeiling = max((float) $products->max(fn (Product $product) => $product->customerPrice()), 1.0);
+        $budgetIntent = $this->hasBudgetIntent($query);
 
-    private function ensureEmbeddings(Collection $products, Collection $categoryMap): Collection
-    {
-        $existing = ProductSearchEmbedding::whereIn('product_id', $products->pluck('id'))
-            ->get()
-            ->keyBy('product_id');
-
-        $needsEmbedding = [];
-
-        foreach ($products as $product) {
+        return $products->map(function (Product $product) use ($embeddings, $queryEmbedding, $tokens, $categoryMap, $priceCeiling, $budgetIntent) {
             $document = $this->buildSearchDocument($product, $categoryMap);
-            $hash = sha1($document);
-            $current = $existing->get($product->id);
+            $keywordScore = $this->keywordScore($tokens, $document);
+            $embedding = $embeddings->get($product->id)?->embedding ?? [];
+            $semanticScore = $queryEmbedding && $embedding
+                ? max(0.0, $this->cosineSimilarity($queryEmbedding, $embedding))
+                : 0.0;
 
-            if (!$current || $current->content_hash !== $hash) {
-                $needsEmbedding[] = [
-                    'product_id' => $product->id,
-                    'document' => $document,
-                    'hash' => $hash,
-                ];
+            $relevance = $queryEmbedding
+                ? ($semanticScore * 0.82) + ($keywordScore * 0.18)
+                : $keywordScore;
+            $promoBoost = min(((float) $product->promo / 100) * 0.20, 0.20);
+            $pricePenalty = ($product->customerPrice() / $priceCeiling) * ($budgetIntent ? 0.30 : 0.08);
+
+            return [
+                'product' => $product,
+                'score' => $relevance + $promoBoost - $pricePenalty,
+                'semantic_score' => $semanticScore,
+                'keyword_score' => $keywordScore,
+                'promo_boost' => $promoBoost,
+                'price_penalty' => $pricePenalty,
+                'source' => $queryEmbedding ? 'hybrid' : 'keyword_fallback',
+            ];
+        })
+            ->filter(fn (array $row) => $row['semantic_score'] > 0.12 || $row['keyword_score'] > 0.15)
+            ->sortByDesc('score')
+            ->values();
+    }
+
+    /** Generate or refresh one document from product metadata in the background job. */
+    public function syncEmbedding(Product $product): void
+    {
+        if (!$this->isEnabled()) return;
+
+        $product->loadMissing('store');
+        $categoryMap = $this->buildCategoryMap(collect([$product]));
+        $document = $this->buildSearchDocument($product, $categoryMap);
+        $hash = sha1($document);
+        $current = $product->searchEmbedding;
+
+        if ($current?->content_hash === $hash && $current->model === $this->modelName()) return;
+
+        $vector = $this->embeddingService->embedDocuments([$document])[0] ?? [];
+        if (!$vector) throw new \RuntimeException('Gemini returned an empty product embedding.');
+
+        ProductSearchEmbedding::updateOrCreate(
+            ['product_id' => $product->id],
+            ['content_hash' => $hash, 'model' => $this->modelName(), 'dimensions' => count($vector), 'embedding' => $vector],
+        );
+    }
+
+    private function queueMissingEmbeddings(Collection $products, Collection $categoryMap, Collection $embeddings): void
+    {
+        foreach ($products as $product) {
+            $current = $embeddings->get($product->id);
+            $hash = sha1($this->buildSearchDocument($product, $categoryMap));
+            if (!$current || $current->content_hash !== $hash || $current->model !== $this->modelName()) {
+                GenerateProductEmbedding::dispatch($product->id);
             }
         }
+    }
 
-        foreach (array_chunk($needsEmbedding, 50) as $chunk) {
-            $vectors = $this->embeddingService->embedDocuments(array_column($chunk, 'document'));
-
-            foreach ($chunk as $index => $item) {
-                ProductSearchEmbedding::updateOrCreate(
-                    ['product_id' => $item['product_id']],
-                    [
-                        'content_hash' => $item['hash'],
-                        'model' => setting('gemini_embedding_model', config('services.gemini.embedding_model', 'models/gemini-embedding-001')),
-                        'dimensions' => isset($vectors[$index]) ? count($vectors[$index]) : null,
-                        'embedding' => $vectors[$index] ?? [],
-                    ]
-                );
-            }
-        }
-
-        return ProductSearchEmbedding::whereIn('product_id', $products->pluck('id'))
-            ->get()
-            ->keyBy('product_id');
+    private function modelName(): string
+    {
+        return setting('gemini_embedding_model') ?: config('services.gemini.embedding_model', 'models/gemini-embedding-001');
     }
 
     private function buildCategoryMap(Collection $products): Collection
     {
         $categoryIds = $products->pluck('categories')->flatten(1)->filter()->unique()->values();
-        if ($categoryIds->isEmpty()) return collect();
-        return Category::whereIn('id', $categoryIds)->get()->keyBy('id');
+        return $categoryIds->isEmpty() ? collect() : Category::whereIn('id', $categoryIds)->get()->keyBy('id');
     }
 
+    /** [Category] - [Store] - [Product Name]: [Description]. Price: [Price]. Promo: [Discount %] */
     private function buildSearchDocument(Product $product, Collection $categoryMap): string
     {
-        $categoryNames = collect($product->categories ?? [])
+        $categories = collect($product->categories ?? [])
             ->map(fn ($id) => $categoryMap->get($id))
             ->filter()
-            ->flatMap(fn ($category) => [$category->name_en, $category->name_fr, $category->name_ar])
-            ->filter()
-            ->all();
+            ->flatMap(fn (Category $category) => [$category->name_en, $category->name_fr, $category->name_ar])
+            ->filter()->unique()->implode(', ');
+        $store = collect([$product->store?->name_en, $product->store?->name_fr, $product->store?->name_ar])->filter()->unique()->implode(' / ');
+        $name = collect([$product->name_en, $product->name_fr, $product->name_ar])->filter()->unique()->implode(' / ');
+        $description = collect([$product->description_en, $product->description_fr, $product->description_ar])->filter()->unique()->implode(' / ');
 
-        $content = implode("\n", array_filter([
-            $product->name_en, $product->name_fr, $product->name_ar,
-            $product->description_en, $product->description_fr, $product->description_ar,
-            implode(', ', $categoryNames),
-        ]));
+        return "[{$categories}] - [{$store}] - [{$name}]: {$description}. Price: {$product->customerPrice()}. Promo: {$product->promo}%";
+    }
 
-        return collect($this->textVariants($content))
-            ->implode("\n");
+    private function hasBudgetIntent(string $query): bool
+    {
+        return Str::contains($this->normalizeText($query), [
+            'cheap', 'budget', 'affordable', 'low price', 'deal', 'discount', 'sale',
+            'pas cher', 'bon marché', 'economique', 'économique', 'promo', 'offre',
+            'رخيص', 'رخيصة', 'اقتصادي', 'عرض', 'تخفيض',
+        ]);
     }
 
     private function normalizeText(string $text): string
@@ -179,116 +153,52 @@ class ProductSemanticSearchService
         return trim(Str::of($text)->squish()->lower()->value());
     }
 
-    private function normalizeAsciiText(string $text): string
-    {
-        return $this->normalizeText(Str::ascii($text));
-    }
-
-    private function textVariants(string $text): array
-    {
-        return collect([
-            $this->normalizeText($text),
-            $this->normalizeAsciiText($text),
-        ])
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
-    }
-
     private function tokens(string $text): array
     {
-        return collect($this->textVariants($text))
-            ->flatMap(function (string $variant) {
-                return preg_split('/[^\p{L}\p{N}]+/u', $variant) ?: [];
-            })
-            ->map(fn ($token) => trim($token))
-            ->filter(fn ($token) => mb_strlen($token) >= 2)
-            ->unique()
-            ->values()
-            ->all();
+        return collect([$this->normalizeText($text), $this->normalizeText(Str::ascii($text))])
+            ->filter()->unique()
+            ->flatMap(fn (string $value) => preg_split('/[^\p{L}\p{N}]+/u', $value) ?: [])
+            ->filter(fn (string $token) => mb_strlen($token) >= 2)
+            ->unique()->values()->all();
     }
 
     private function keywordScore(array $tokens, string $document): float
     {
-        if (empty($tokens)) return 0.0;
-
+        if (!$tokens) return 0.0;
+        $normalizedDocument = $this->normalizeText($document);
         $documentTokens = $this->tokens($document);
-
-        $score = collect($tokens)
-            ->map(fn (string $token) => $this->tokenMatchScore($token, $document, $documentTokens))
-            ->sum();
-
-        return $score / max(count($tokens), 1);
+        return collect($tokens)->map(fn (string $token) => $this->tokenMatchScore($token, $normalizedDocument, $documentTokens))->avg() ?? 0.0;
     }
 
     private function tokenMatchScore(string $token, string $document, array $documentTokens): float
     {
-        if (str_contains($document, $token)) {
-            return 1.0;
-        }
+        if (str_contains($document, $token)) return 1.0;
+        if (!preg_match('/^[\x20-\x7E]+$/', $token)) return 0.0;
 
-        $best = 0.0;
-
-        foreach ($documentTokens as $documentToken) {
-            $score = $this->fuzzyTokenSimilarity($token, $documentToken);
-
-            if ($score > $best) {
-                $best = $score;
-            }
-
-            if ($best >= 0.92) {
-                break;
-            }
-        }
-
-        return $best;
-    }
-
-    private function fuzzyTokenSimilarity(string $queryToken, string $documentToken): float
-    {
-        if ($queryToken === $documentToken) {
-            return 1.0;
-        }
-
-        if (!$this->isAscii($queryToken) || !$this->isAscii($documentToken)) {
-            return 0.0;
-        }
-
-        $queryLength = mb_strlen($queryToken);
-        $documentLength = mb_strlen($documentToken);
-        $maxLength = max($queryLength, $documentLength);
-
-        if ($maxLength < 3 || abs($queryLength - $documentLength) > 2) {
-            return 0.0;
-        }
-
-        $distance = levenshtein($queryToken, $documentToken);
-        $similarity = 1 - ($distance / $maxLength);
-
-        if ($distance === 1 && $maxLength >= 4) {
-            return max($similarity, 0.88);
-        }
-
-        return $similarity >= 0.72 ? $similarity : 0.0;
-    }
-
-    private function isAscii(string $value): bool
-    {
-        return mb_check_encoding($value, 'ASCII');
+        return collect($documentTokens)
+            ->filter(fn (string $candidate) => preg_match('/^[\x20-\x7E]+$/', $candidate))
+            ->map(function (string $candidate) use ($token) {
+                $length = max(strlen($token), strlen($candidate));
+                if ($length < 3 || abs(strlen($token) - strlen($candidate)) > 2) return 0.0;
+                $similarity = 1 - (levenshtein($token, $candidate) / $length);
+                return $similarity >= 0.72 ? $similarity : 0.0;
+            })->max() ?? 0.0;
     }
 
     private function cosineSimilarity(array $a, array $b): float
     {
         $dot = 0.0; $normA = 0.0; $normB = 0.0;
-        $length = min(count($a), count($b));
-
-        for ($i = 0; $i < $length; $i++) {
-            $dot += $a[$i] * $b[$i];
-            $normA += $a[$i] ** 2;
-            $normB += $b[$i] ** 2;
+        foreach (array_keys($a) as $index) {
+            if (!isset($b[$index])) continue;
+            $dot += $a[$index] * $b[$index];
+            $normA += $a[$index] ** 2;
+            $normB += $b[$index] ** 2;
         }
+        return $normA === 0.0 || $normB === 0.0 ? 0.0 : $dot / (sqrt($normA) * sqrt($normB));
+    }
 
-        return ($normA == 0.0 || $normB == 0.0) ? 0.0 : $dot / (sqrt($normA) * sqrt($normB));
+    private function safeReport(Throwable $exception): void
+    {
+        try { report($exception); } catch (Throwable) { /* fallback search remains available */ }
     }
 }

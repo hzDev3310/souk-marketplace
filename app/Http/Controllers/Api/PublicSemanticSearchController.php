@@ -62,6 +62,9 @@ class PublicSemanticSearchController extends Controller
                         'score' => round($row['score'], 6),
                         'semantic_score' => round($row['semantic_score'], 6),
                         'keyword_score' => round($row['keyword_score'], 6),
+                        'promo_boost' => round($row['promo_boost'], 6),
+                        'price_penalty' => round($row['price_penalty'], 6),
+                        'source' => $row['source'],
                     ];
                 })
                 ->values();

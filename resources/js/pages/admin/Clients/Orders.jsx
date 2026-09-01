@@ -58,6 +58,11 @@ const getItemStatusConfig = (status) => {
     }
 };
 
+const getItemPrice = (item) => {
+    const price = Number(item?.price ?? item?.product?.price ?? 0);
+    return Number.isFinite(price) ? price : 0;
+};
+
 const ClientOrders = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -83,14 +88,14 @@ const ClientOrders = () => {
     const calculateOrderTotal = (order) => {
         if (order.totalAmount != null) return Number(order.totalAmount);
         if (!order.items) return 0;
-        return order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        return order.items.reduce((sum, item) => sum + (getItemPrice(item) * (item.quantity || 1)), 0);
     };
 
     const calculateCancelledTotal = (order) => {
         if (!order.items) return 0;
         return order.items
             .filter((item) => ['annule', 'cancelled'].includes(item.status?.toLowerCase()))
-            .reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            .reduce((sum, item) => sum + (getItemPrice(item) * (item.quantity || 1)), 0);
     };
 
     const totalSpent = orders.reduce((sum, order) => sum + calculateOrderTotal(order), 0);
@@ -293,14 +298,14 @@ const ClientOrders = () => {
                                                                         <div className="flex-1 min-w-0">
                                                                             <p className="font-bold text-sm text-foreground truncate">{item.product?.name_fr || item.product?.name_en || 'Product'}</p>
                                                                             <p className="text-[10px] font-bold text-muted-foreground uppercase">
-                                                                                {item.price.toFixed(2)} TND × {item.quantity}
+                                                                                {getItemPrice(item).toFixed(2)} TND × {item.quantity}
                                                                             </p>
                                                                         </div>
                                                                         <div className="flex items-center gap-3 shrink-0">
                                                                             <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${itemStatus.bg} ${itemStatus.color}`}>
                                                                                 {itemStatus.raw ? (itemStatus.raw) : t(itemStatus.key)}
                                                                             </span>
-                                                                            <span className="font-black text-primary text-sm">{(item.price * item.quantity).toFixed(2)} TND</span>
+                                                                            <span className="font-black text-primary text-sm">{(getItemPrice(item) * (item.quantity || 1)).toFixed(2)} TND</span>
                                                                         </div>
                                                                     </div>
                                                                 );

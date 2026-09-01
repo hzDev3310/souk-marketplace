@@ -1,154 +1,173 @@
 @extends('layouts.public')
 
 @section('seo')
-    <title>My Orders - Souk AI</title>
+    <title>{{ __('website.orders.title') }} - Souk AI</title>
+    <style>
+        .stepper-horizontal { display: flex; justify-content: space-between; align-items: center; position: relative; }
+        .stepper-horizontal::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: #E2E8F0; z-index: 0; transform: translateY(-50%); }
+        .stepper-progress { position: absolute; top: 50%; left: 0; height: 2px; background: var(--primary); z-index: 1; transform: translateY(-50%); transition: width 0.5s ease; }
+        .stepper-step { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; }
+        .step-circle { width: 32px; height: 32px; border-radius: 50%; background: white; border: 2px solid #E2E8F0; display: flex; items-center: center; justify-content: center; font-size: 14px; transition: all 0.3s ease; }
+        .step-active .step-circle { border-color: var(--primary); background: var(--primary); color: white; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2); }
+        .step-completed .step-circle { border-color: var(--primary); background: var(--primary); color: white; }
+        .step-label { margin-top: 8px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748B; }
+        .step-active .step-label { color: var(--primary); }
+        
+        /* Mobile Stepper (Vertical) */
+        .stepper-vertical { display: flex; flex-direction: column; gap: 24px; position: relative; padding-left: 24px; }
+        .stepper-vertical::before { content: ''; position: absolute; left: 7px; top: 0; bottom: 0; width: 2px; background: #E2E8F0; }
+        .v-step-circle { position: absolute; left: -24px; width: 16px; height: 16px; border-radius: 50%; background: white; border: 2px solid #E2E8F0; z-index: 2; }
+        .v-step-active .v-step-circle { border-color: var(--primary); background: var(--primary); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2); }
+        .v-step-completed .v-step-circle { border-color: var(--primary); background: var(--primary); }
+    </style>
 @endsection
 
 @section('content')
-<div class="max-w-xl mx-auto px-4 md:px-0">
-    <!-- Header Stats -->
-    <div class="grid grid-cols-3 gap-4 mb-10">
-        @php
-            $newCount = $orders->whereIn('status', ['en_attente', 'confirme'])->count();
-            $progressCount = $orders->whereIn('status', ['imported_to_depot', 'en_livraison'])->count();
-            $completedCount = $orders->whereIn('status', ['livree', 'retournee'])->count();
-        @endphp
-        
-        <div class="bg-card rounded-[32px] p-6 text-center border border-border/40 premium-shadow">
-            <h3 class="text-3xl font-black text-foreground mb-1">{{ $newCount }}</h3>
-            <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">New</p>
-        </div>
-        
-        <div class="bg-[#065F46] rounded-[32px] p-6 text-center shadow-xl shadow-emerald-900/20">
-            <h3 class="text-3xl font-black text-white mb-1">{{ sprintf('%02d', $progressCount) }}</h3>
-            <p class="text-[10px] font-black uppercase tracking-widest text-white/70 leading-tight">In<br>Progress</p>
-        </div>
-        
-        <div class="bg-card rounded-[32px] p-6 text-center border border-border/40 premium-shadow">
-            <h3 class="text-3xl font-black text-foreground mb-1">{{ $completedCount }}</h3>
-            <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Completed</p>
-        </div>
+<div class="max-w-4xl mx-auto px-4 md:px-0">
+    <div class="mb-12">
+        <h1 class="text-4xl font-black text-foreground tracking-tight uppercase">{{ __('website.orders.title') }}</h1>
+        <p class="text-muted-foreground font-medium">{{ __('website.orders.subtitle') }}</p>
     </div>
 
-    <div class="mb-8">
-        <h2 class="text-2xl font-black text-foreground tracking-tight">Active Deliveries</h2>
-    </div>
-
-    <div class="space-y-6">
+    <div class="space-y-8">
         @forelse($orders as $order)
-        @php
-            $status = strtolower((string) $order->status);
-            $statusMap = [
-                'en_attente' => ['label' => 'En attente', 'tone' => 'bg-amber-500/10 border-amber-500/20 text-amber-600', 'progress' => 25],
-                'confirme' => ['label' => 'Confirmé', 'tone' => 'bg-blue-500/10 border-blue-500/20 text-blue-600', 'progress' => 50],
-                'imported_to_depot' => ['label' => 'Importé au dépôt', 'tone' => 'bg-indigo-500/10 border-indigo-500/20 text-indigo-600', 'progress' => 66],
-                'en_livraison' => ['label' => 'En livraison', 'tone' => 'bg-purple-500/10 border-purple-500/20 text-purple-600', 'progress' => 80],
-                'livree' => ['label' => 'Livrée', 'tone' => 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600', 'progress' => 100],
-                'retournee' => ['label' => 'Retournée', 'tone' => 'bg-rose-500/10 border-rose-500/20 text-rose-600', 'progress' => 100],
-            ];
-            $currentStatus = $statusMap[$status] ?? ['label' => strtoupper($order->status), 'tone' => 'bg-muted/20 border-border/20 text-foreground', 'progress' => 0];
-        @endphp
-        <div class="bg-card border border-border/40 rounded-[40px] p-8 premium-shadow relative overflow-hidden group">
-            <!-- Card Header -->
-            <div class="flex justify-between items-start mb-8">
-                <div>
-                    <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Order #{{ strtoupper(substr($order->id, 0, 7)) }}</p>
-                    <h3 class="text-2xl font-black text-[#065F46] tracking-tight">
-                        @if($order->items->count() > 0)
-                            {{ $order->items->first()->product->{'name_'.app()->getLocale()} }}
-                        @else
-                            Order Summary
+            @php
+                $status = $order->status;
+                $steps = [
+                    'en_attente' => ['index' => 0, 'label' => __('website.status.pending'), 'color' => '#6366F1'],
+                    'confirme' => ['index' => 1, 'label' => __('website.status.confirmed'), 'color' => '#10B981'],
+                    'imported_to_depot' => ['index' => 2, 'label' => __('website.status.warehouse'), 'color' => '#6366F1'],
+                    'en_livraison' => ['index' => 3, 'label' => __('website.status.delivery'), 'color' => '#4F46E5'],
+                    'livree' => ['index' => 4, 'label' => __('website.status.delivered'), 'color' => '#10B981'],
+                ];
+                
+                $isCancelled = ($status === 'annule' || $status === 'retournee');
+                $currentIndex = $steps[$status]['index'] ?? 0;
+                $progressWidth = ($currentIndex / 4) * 100;
+                
+                $statusConfig = [
+                    'en_attente' => ['bg' => 'bg-indigo-500/10', 'text' => 'text-indigo-600', 'label' => __('website.status.pending')],
+                    'confirme' => ['bg' => 'bg-emerald-500/10', 'text' => 'text-emerald-600', 'label' => __('website.status.confirmed')],
+                    'imported_to_depot' => ['bg' => 'bg-slate-500/10', 'text' => 'text-slate-600', 'label' => __('website.status.warehouse')],
+                    'en_livraison' => ['bg' => 'bg-blue-500/10', 'text' => 'text-blue-600', 'label' => __('website.status.delivery')],
+                    'livree' => ['bg' => 'bg-emerald-500/10', 'text' => 'text-emerald-600', 'label' => __('website.status.delivered')],
+                    'annule' => ['bg' => 'bg-red-500/10', 'text' => 'text-red-600', 'label' => __('website.status.cancelled')],
+                    'retournee' => ['bg' => 'bg-orange-500/10', 'text' => 'text-orange-600', 'label' => __('website.status.returned')],
+                ];
+                $currentCfg = $statusConfig[$status] ?? ['bg' => 'bg-muted/10', 'text' => 'text-muted-foreground', 'label' => strtoupper($status)];
+            @endphp
+
+            <div class="bg-card border border-border/40 rounded-[40px] p-6 md:p-10 premium-shadow">
+                <!-- Header -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
+                    <div>
+                        <h3 class="text-lg font-black text-foreground">#{{ $order->order_number }}</h3>
+                        <p class="text-xs font-bold text-muted-foreground uppercase tracking-widest">{{ $order->created_at->format('M d, Y') }}</p>
+                    </div>
+                    <div class="px-5 py-2 rounded-full {{ $currentCfg['bg'] }} {{ $currentCfg['text'] }} text-[10px] font-black uppercase tracking-[0.15em]">
+                        {{ $currentCfg['label'] }}
+                    </div>
+                </div>
+
+                @if(!$isCancelled)
+                    <!-- Desktop Stepper -->
+                    <div class="hidden md:block mb-12 px-4">
+                        <div class="stepper-horizontal">
+                            <div class="stepper-progress" style="width: {{ $progressWidth }}%"></div>
+                            @foreach($steps as $key => $step)
+                                <div class="stepper-step {{ $currentIndex >= $step['index'] ? ($currentIndex == $step['index'] ? 'step-active' : 'step-completed') : '' }}">
+                                    <div class="step-circle">
+                                        @if($currentIndex > $step['index'])
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                        @else
+                                            {{ $step['index'] + 1 }}
+                                        @endif
+                                    </div>
+                                    <span class="step-label">{{ $step['label'] }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Mobile Stepper -->
+                    <div class="md:hidden mb-10">
+                        <div class="stepper-vertical">
+                            @foreach($steps as $key => $step)
+                                <div class="relative {{ $currentIndex >= $step['index'] ? ($currentIndex == $step['index'] ? 'v-step-active' : 'v-step-completed') : '' }}">
+                                    <div class="v-step-circle"></div>
+                                    <div class="pl-4">
+                                        <h4 class="text-xs font-black uppercase tracking-widest {{ $currentIndex >= $step['index'] ? 'text-foreground' : 'text-muted-foreground' }}">
+                                            {{ $step['label'] }}
+                                        </h4>
+                                        @if($currentIndex == $step['index'])
+                                            <p class="text-[10px] font-medium text-muted-foreground mt-1">{{ __('website.orders.currentStep') }}</p>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @else
+                    <div class="p-6 bg-red-500/5 border border-red-500/10 rounded-3xl mb-10">
+                        <p class="text-xs font-bold text-red-600 text-center uppercase tracking-widest">
+                            {{ $status === 'annule' ? __('website.orders.cancelledMessage') : __('website.orders.returnedMessage') }}
+                        </p>
+                    </div>
+                @endif
+
+                <!-- Items -->
+                <div class="space-y-4 mb-10">
+                    @foreach($order->items as $item)
+                        <div class="flex items-center gap-4 p-4 bg-muted/20 rounded-3xl">
+                            <div class="w-16 h-16 rounded-2xl overflow-hidden bg-white border border-border/20">
+                                @if($item->product->albums->first())
+                                    <img src="{{ $item->product->albums->first()->file }}" class="w-full h-full object-cover">
+                                @endif
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-sm font-black text-foreground">{{ $item->product->{'name_'.app()->getLocale()} }}</h4>
+                                <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Qty: {{ $item->quantity }} • {{ number_format($item->price, 2) }} {{ __('website.currency') }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-black text-foreground">{{ number_format($item->price * $item->quantity, 2) }}</p>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="flex flex-col sm:flex-row justify-between items-center pt-8 border-t border-border/20 gap-4">
+                    <div class="text-center sm:text-left">
+                        <p class="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{{ __('website.cart.total') }}</p>
+                        <p class="text-2xl font-black text-primary">{{ number_format($order->totalAmount, 2) }} <span class="text-xs">{{ __('website.currency') }}</span></p>
+                    </div>
+                    <div class="flex gap-3 w-full sm:w-auto">
+                        @if($status === 'en_attente')
+                            <form action="{{ route('public.orders.cancel', $order) }}" method="POST" class="w-full sm:w-auto">
+                                @csrf
+                                <button type="submit" onclick="return confirm('Are you sure?')" class="w-full sm:px-8 py-4 bg-red-500/10 text-red-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-500/20 transition-all">
+                                    {{ __('website.orders.cancelBtn') }}
+                                </button>
+                            </form>
                         @endif
-                    </h3>
-                </div>
-                <div class="px-4 py-2 border rounded-full {{ $currentStatus['tone'] }}">
-                    <span class="text-[10px] font-black uppercase tracking-widest">
-                        {{ $currentStatus['label'] }}
-                    </span>
-                </div>
-            </div>
-
-            <!-- Tracking Timeline -->
-            <div class="relative pl-14 space-y-10 mb-10 {{ in_array($status, ['retournee']) ? 'opacity-40 grayscale' : '' }}">
-                <!-- Vertical Line -->
-                <div class="absolute left-6 top-2 bottom-2 w-1.5 bg-muted rounded-full overflow-hidden">
-                    <div class="w-full bg-[#065F46] rounded-full transition-all duration-1000" style="height: {{ $currentStatus['progress'] }}%"></div>
-                </div>
-
-                <!-- Step 1 -->
-                <div class="relative">
-                    <div class="absolute -left-12 w-8 h-8 rounded-xl flex items-center justify-center {{ in_array($status, ['en_attente', 'confirme', 'imported_to_depot', 'en_livraison', 'livree']) ? 'bg-[#065F46] text-white' : 'bg-muted text-muted-foreground' }} z-10 shadow-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
-                    </div>
-                    <div>
-                        <h4 class="font-black text-sm {{ in_array($status, ['en_attente', 'confirme', 'imported_to_depot', 'en_livraison', 'livree']) ? 'text-foreground' : 'text-muted-foreground' }}">En attente</h4>
-                        <p class="text-[10px] font-bold text-muted-foreground">Commande enregistrée • {{ $order->updated_at->format('H:i A') }}</p>
-                    </div>
-                </div>
-
-                <!-- Step 2 -->
-                <div class="relative">
-                    <div class="absolute -left-12 w-8 h-8 rounded-xl flex items-center justify-center {{ in_array($status, ['confirme', 'imported_to_depot', 'en_livraison', 'livree']) ? 'bg-[#065F46] text-white' : 'bg-muted text-muted-foreground' }} z-10 shadow-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V2H10z"/><path d="M10 7V5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"/><path d="M8 7h8"/><rect width="16" height="12" x="4" y="7" rx="2"/><path d="M12 12v3"/><path d="M16 11l-1 2"/><path d="M8 11l1 2"/></svg>
-                    </div>
-                    <div>
-                        <h4 class="font-black text-sm {{ in_array($status, ['confirme', 'imported_to_depot', 'en_livraison', 'livree']) ? 'text-foreground' : 'text-muted-foreground' }}">Dépôt / préparation</h4>
-                        <p class="text-[10px] font-bold text-muted-foreground">{{ in_array($status, ['imported_to_depot', 'en_livraison', 'livree']) ? 'Produit reçu au dépôt' : 'En attente de préparation' }}</p>
-                    </div>
-                </div>
-
-                <!-- Step 3 -->
-                <div class="relative">
-                    <div class="absolute -left-12 w-8 h-8 rounded-xl flex items-center justify-center {{ in_array($status, ['en_livraison', 'livree']) ? 'bg-[#065F46] text-white' : 'bg-muted text-muted-foreground' }} z-10 shadow-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-                    </div>
-                    <div>
-                        <h4 class="font-black text-sm {{ in_array($status, ['en_livraison', 'livree']) ? 'text-foreground' : 'text-muted-foreground' }}">Livraison</h4>
-                        <p class="text-[10px] font-bold text-muted-foreground">{{ $status === 'livree' ? 'Commande livrée' : ($status === 'en_livraison' ? 'En cours de livraison' : 'En attente d’expédition') }}</p>
+                        <a href="{{ route('public.contact') }}" class="flex-1 sm:flex-none sm:px-8 py-4 bg-muted text-foreground rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-muted/80 transition-all text-center">
+                            {{ __('website.orders.helpBtn') }}
+                        </a>
                     </div>
                 </div>
             </div>
-
-            <!-- Items & Footer -->
-            <div class="grid grid-cols-2 gap-4 mb-8">
-                <div class="bg-muted/30 rounded-2xl p-4">
-                    <p class="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">ITEMS</p>
-                    <p class="text-[10px] font-black text-foreground">{{ $order->items->count() }}x {{ $order->items->first()->product->{'name_'.app()->getLocale()} }}</p>
-                </div>
-                <div class="bg-muted/30 rounded-2xl p-4">
-                    <p class="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">TOTAL</p>
-                    <p class="text-[10px] font-black text-foreground">{{ number_format($order->totalAmount, 2) }} {{ __('website.currency') }}</p>
-                </div>
-            </div>
-
-            <div class="flex items-center justify-between pt-6 border-t border-border/20">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-bold text-foreground">Courier: Marcus V.</p>
-                    </div>
-                </div>
-                <button class="px-6 py-2 bg-emerald-500/10 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500/20 transition-all">Track Live</button>
-            </div>
-        </div>
         @empty
-        <div class="py-20 text-center space-y-4 glass rounded-[40px] border border-border/40">
-            <div class="w-20 h-20 bg-muted/20 rounded-full flex items-center justify-center mx-auto text-muted-foreground/40">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            <div class="py-32 text-center bg-card rounded-[40px] border border-border/40 premium-shadow">
+                <div class="w-24 h-24 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-8 text-muted-foreground/40">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                </div>
+                <h3 class="text-xl font-black text-foreground mb-2">{{ __('website.orders.empty') }}</h3>
+                <p class="text-muted-foreground font-medium mb-8">{{ __('website.orders.emptyDesc') }}</p>
+                <a href="{{ route('public.all-products') }}" class="inline-block px-12 py-5 bg-primary text-white rounded-3xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all">
+                    {{ __('website.orders.startShopping') }}
+                </a>
             </div>
-            <p class="text-muted-foreground font-bold uppercase tracking-widest text-xs">You haven't placed any orders yet</p>
-            <a href="{{ route('public.all-products') }}" class="inline-block px-8 py-4 bg-primary text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Start Shopping</a>
-        </div>
         @endforelse
     </div>
-</div>
-
-<!-- Floating Action Button for Contact Support -->
-<div class="fixed bottom-32 right-8 z-50">
-    <button class="w-14 h-14 bg-[#065F46] text-white rounded-2xl flex items-center justify-center shadow-2xl shadow-emerald-900/40 hover:scale-110 active:scale-95 transition-all">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-    </button>
 </div>
 @endsection

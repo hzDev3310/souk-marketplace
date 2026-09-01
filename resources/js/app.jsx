@@ -31,7 +31,6 @@ import CategoryEdit from './pages/admin/Categories/Edit';
 import Products from './pages/Shared/Products/Index';
 import ProductForm from './pages/Shared/Products/Form';
 import AdminOrders from './pages/Shared/Orders/AdminOrders';
-import StoreOrders from './pages/Shared/Orders/StoreOrders';
 import OrderDetails from './pages/Shared/Orders/Detail';
 import ProductDetail from './pages/Shared/Products/Detail';
 import StoreDetail from './pages/admin/Stores/Detail';
@@ -69,8 +68,7 @@ const RoleBasedProductEdit = () => {
 
 const RoleBasedOrders = () => {
     const { user } = useAuth();
-    if (user?.role === 'ADMIN') return <AdminOrders />;
-    if (user?.role === 'STORE') return <StoreOrders />;
+    if (user?.role === 'ADMIN' || user?.role === 'STORE') return <AdminOrders />;
     return <Navigate to="/dashboard" replace />;
 };
 

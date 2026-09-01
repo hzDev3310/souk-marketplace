@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Shared;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Services\OrderNotificationService;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -139,9 +140,12 @@ class OrderController extends Controller
             "status" => "required|string|in:en_attente,confirme,imported_to_depot,en_livraison,livree,retournee,annule"
         ]);
 
+        $previousStatus = $order->status;
         $order->update([
             'status' => Order::normalizeStatus($validated['status']) ?? $validated['status'],
         ]);
+        $order->refresh();
+        app(OrderNotificationService::class)->statusChanged($order, $previousStatus, app()->getLocale());
 
         return response()->json([
             "message" => "Order updated successfully",
@@ -187,7 +191,10 @@ class OrderController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         $order = Order::findOrFail($id);
+        $previousStatus = $order->status;
         $order->update(['status' => 'confirme']);
+        $order->refresh();
+        app(OrderNotificationService::class)->statusChanged($order, $previousStatus, app()->getLocale());
         
         return response()->json([
             "message" => "Order confirmed manually",

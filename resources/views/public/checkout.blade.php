@@ -11,12 +11,17 @@
 @endsection
 
 @section('content')
+    @php
+        $authUser = auth()->guard('web')->user();
+        $client = $authUser?->client;
+    @endphp
+
     <div class="mb-16">
         <h1 class="text-5xl font-black text-foreground tracking-tight mb-4 uppercase">{{ __('website.checkout.title') }}</h1>
         <p class="text-muted-foreground font-medium">{{ __('website.checkout.subtitle') }}</p>
     </div>
 
-    <form action="{{ route('public.checkout.process') }}" method="POST" id="checkout-form">
+    <form action="{{ route('public.checkout.send-otp') }}" method="POST" id="checkout-form">
         @csrf
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
             <!-- Details Form -->
@@ -28,7 +33,7 @@
                             <span class="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">1</span>
                             {{ __('website.checkout.personalInfo') }}
                         </h3>
-                        
+
                         @guest
                         <div class="p-4 bg-primary/5 border border-primary/20 rounded-2xl">
                             <p class="text-[11px] font-bold text-primary leading-relaxed">
@@ -37,21 +42,21 @@
                             </p>
                         </div>
                         @endguest
-                        
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="space-y-2">
                                 <label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">{{ __('website.checkout.firstName') }}</label>
-                                <input type="text" name="first_name" value="{{ old('first_name', auth()->user()->first_name ?? '') }}" required class="w-full px-6 py-4 bg-muted/30 border border-border/40 rounded-2xl focus:border-primary/50 outline-none transition-all font-bold text-sm">
+                                <input type="text" name="first_name" value="{{ old('first_name', $authUser->name ?? '') }}" required class="w-full px-6 py-4 bg-muted/30 border border-border/40 rounded-2xl focus:border-primary/50 outline-none transition-all font-bold text-sm">
                             </div>
                             <div class="space-y-2">
                                 <label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">{{ __('website.checkout.lastName') }}</label>
-                                <input type="text" name="last_name" value="{{ old('last_name', auth()->user()->last_name ?? '') }}" required class="w-full px-6 py-4 bg-muted/30 border border-border/40 rounded-2xl focus:border-primary/50 outline-none transition-all font-bold text-sm">
+                                <input type="text" name="last_name" value="{{ old('last_name', $authUser->family_name ?? '') }}" required class="w-full px-6 py-4 bg-muted/30 border border-border/40 rounded-2xl focus:border-primary/50 outline-none transition-all font-bold text-sm">
                             </div>
                         </div>
-                        
+
                         <div class="space-y-2">
                             <label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">{{ __('website.checkout.email') }}</label>
-                            <input type="email" name="email" value="{{ old('email', auth()->user()->email ?? '') }}" required class="w-full px-6 py-4 bg-muted/30 border border-border/40 rounded-2xl focus:border-primary/50 outline-none transition-all font-bold text-sm">
+                            <input type="email" name="email" value="{{ old('email', $authUser->email ?? '') }}" required class="w-full px-6 py-4 bg-muted/30 border border-border/40 rounded-2xl focus:border-primary/50 outline-none transition-all font-bold text-sm">
                         </div>
                     </div>
 
@@ -64,40 +69,48 @@
                         <div class="space-y-6">
                             <div class="space-y-2">
                                 <label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">{{ __('website.checkout.streetAddress') }}</label>
-                                <input type="text" name="address" id="address" value="{{ old('address') }}" required class="w-full px-6 py-4 bg-muted/30 border border-border/40 rounded-2xl focus:border-primary/50 outline-none transition-all font-bold text-sm">
+                                <input type="text" name="address" id="address" value="{{ old('address', $client->address ?? '') }}" required class="w-full px-6 py-4 bg-muted/30 border border-border/40 rounded-2xl focus:border-primary/50 outline-none transition-all font-bold text-sm">
                             </div>
-                            
+
                             <div class="grid grid-cols-2 gap-6">
                                 <div class="space-y-2">
                                     <label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">{{ __('website.checkout.city') }}</label>
-                                    <input type="text" name="city" id="city" value="{{ old('city') }}" required class="w-full px-6 py-4 bg-muted/30 border border-border/40 rounded-2xl focus:border-primary/50 outline-none transition-all font-bold text-sm">
+                                    <input type="text" name="city" id="city" value="{{ old('city', $client->city ?? '') }}" required class="w-full px-6 py-4 bg-muted/30 border border-border/40 rounded-2xl focus:border-primary/50 outline-none transition-all font-bold text-sm">
                                 </div>
                                 <div class="space-y-2">
                                     <label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">{{ __('website.checkout.postalCode') }}</label>
-                                    <input type="text" name="postal_code" id="postal_code" value="{{ old('postal_code') }}" required class="w-full px-6 py-4 bg-muted/30 border border-border/40 rounded-2xl focus:border-primary/50 outline-none transition-all font-bold text-sm">
+                                    <input type="text" name="postal_code" id="postal_code" value="{{ old('postal_code', $client->codePostal ?? '') }}" required class="w-full px-6 py-4 bg-muted/30 border border-border/40 rounded-2xl focus:border-primary/50 outline-none transition-all font-bold text-sm">
                                 </div>
                             </div>
-                            
-                            <!-- Hidden inputs for Lat/Lon -->
-                            <input type="hidden" name="lat" id="lat-input" value="36.8065">
-                            <input type="hidden" name="lon" id="lon-input" value="10.1815">
 
-                            <!-- Map Search -->
-                            <div class="space-y-4">
-                                <div class="flex items-center justify-between">
-                                    <label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">{{ __('website.checkout.selectOnMap') }}</label>
-                                    <button type="button" id="use-current-location" class="text-[9px] font-black uppercase tracking-widest text-primary hover:text-primaryemphasis transition-colors flex items-center gap-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                                        {{ __('website.checkout.useCurrent') }}
-                                    </button>
-                                </div>
-                                
-                                <div class="relative">
-                                    <input type="text" id="map-search" placeholder="{{ __('website.checkout.searchPlace') }}" class="absolute top-4 left-4 right-4 z-[400] px-4 py-3 bg-white/90 dark:bg-black/80 backdrop-blur-md border border-border/40 rounded-xl shadow-2xl outline-none text-xs font-bold">
-                                    <div id="search-results" class="hidden absolute top-16 left-4 right-4 z-[400] bg-white dark:bg-black/90 border border-border/40 rounded-xl overflow-hidden shadow-2xl backdrop-blur-md max-h-48 overflow-y-auto"></div>
-                                    <div id="map" class="h-[400px] w-full rounded-[32px] border border-border/40 z-10 sticky"></div>
-                                </div>
-                            </div>
+                            <!-- Hidden inputs for Lat/Lon -->
+                            @php
+                                $defaultLat = $client->lat ?? '36.8065';
+                                $defaultLon = $client->lon ?? '10.1815';
+                            @endphp
+                            <input type="hidden" name="lat" id="lat-input" value="{{ $defaultLat }}">
+                            <input type="hidden" name="lon" id="lon-input" value="{{ $defaultLon }}">
+
+                             <!-- Map Search -->
+                             <div class="space-y-4">
+                                 <div class="flex items-center justify-between">
+                                     <label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">{{ __('website.checkout.selectOnMap') }}</label>
+                                     <button type="button" id="use-current-location" class="text-[9px] font-black uppercase tracking-widest text-primary hover:text-primaryemphasis transition-colors flex items-center gap-1">
+                                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                                         {{ __('website.checkout.useCurrent') }}
+                                     </button>
+                                 </div>
+                                 
+                                 <div class="relative">
+                                     <div class="absolute top-4 left-4 right-4 z-[400] flex gap-2">
+                                         <input type="text" id="map-search" placeholder="{{ __('website.checkout.searchPlace') }}" class="flex-1 px-4 py-3 bg-white/90 dark:bg-black/80 backdrop-blur-md border border-border/40 rounded-xl shadow-2xl outline-none text-xs font-bold">
+                                         <button type="button" id="search-btn" class="px-4 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest">Search</button>
+                                     </div>
+                                     <div id="search-results" class="hidden absolute top-16 left-4 right-4 z-[400] bg-white dark:bg-black/90 border border-border/40 rounded-xl overflow-hidden shadow-2xl backdrop-blur-md max-h-48 overflow-y-auto"></div>
+                                     <div id="map" class="h-[400px] w-full rounded-[32px] border border-border/40 z-10 sticky"></div>
+                                 </div>
+                             </div>
+
                         </div>
                     </div>
                 </div>
@@ -180,33 +193,40 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
-        // Init map (centered on Tunis, restricted to Tunisia)
+        const defaultLat = {{ $defaultLat }};
+        const defaultLon = {{ $defaultLon }};
         const tunisiaBounds = L.latLngBounds([30.0, 7.0], [38.0, 12.0]);
         const map = L.map('map', {
             maxBounds: tunisiaBounds,
             maxBoundsViscosity: 1.0
-        }).setView([36.8065, 10.1815], 13);
-        
+        }).setView([defaultLat, defaultLon], 13);
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
+            attribution: '&copy; OpenStreetMap'
         }).addTo(map);
 
-        let marker = L.marker([36.8065, 10.1815], { draggable: true }).addTo(map);
+        let marker = L.marker([defaultLat, defaultLon], { draggable: true }).addTo(map);
 
         function updateInputs(lat, lon) {
             document.getElementById('lat-input').value = lat;
             document.getElementById('lon-input').value = lon;
-            
-            // Reverse Geocoding to fill address (restricted to Tunisia)
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&countrycodes=tn`)
+
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&countrycodes=tn&addressdetails=1&accept-language=fr`)
                 .then(res => res.json())
                 .then(data => {
                     if(data.address) {
-                        if(data.address.road) document.getElementById('address-input').value = data.address.road;
-                        if(data.address.city || data.address.town || data.address.village) {
-                            document.getElementById('city-input').value = data.address.city || data.address.town || data.address.village;
-                        }
-                        if(data.address.postcode) document.getElementById('postcode-input').value = data.address.postcode;
+                        const parts = [];
+                        if(data.address.house_number) parts.push(data.address.house_number);
+                        if(data.address.road) parts.push(data.address.road);
+                        if(data.address.suburb || data.address.quarter) parts.push(data.address.suburb || data.address.quarter);
+
+                        const addressEl = document.getElementById('address');
+                        const cityEl = document.getElementById('city');
+                        const postalEl = document.getElementById('postal_code');
+
+                        if(addressEl && parts.length) addressEl.value = parts.join(' ');
+                        if(cityEl) cityEl.value = data.address.city || data.address.town || data.address.village || data.address.county || '';
+                        if(postalEl) postalEl.value = data.address.postcode || '';
                     }
                 });
         }
@@ -221,60 +241,83 @@
             updateInputs(e.latlng.lat, e.latlng.lng);
         });
 
-        // Search Functionality
-        const searchBtn = document.getElementById('search-btn');
         const searchInput = document.getElementById('map-search');
         const resultsEl = document.getElementById('search-results');
+        let searchTimeout = null;
 
         function performSearch() {
             const query = searchInput.value;
-            if(query.length < 3) return;
+            if(query.length < 2) return;
 
-            // Restricted to Tunisia via countrycodes=tn
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&countrycodes=tn`)
+            const tnViewbox = '7.0,30.0,12.0,38.0';
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Tunisie')}&countrycodes=tn&viewbox=${tnViewbox}&bounded=1&limit=8&addressdetails=1&accept-language=fr`)
                 .then(res => res.json())
                 .then(data => {
                     resultsEl.innerHTML = '';
+                    if(data.length === 0) {
+                        resultsEl.innerHTML = '<div class="px-4 py-3 text-xs font-bold text-muted-foreground">No results found</div>';
+                        resultsEl.classList.remove('hidden');
+                        return;
+                    }
                     resultsEl.classList.remove('hidden');
                     data.forEach(item => {
                         const div = document.createElement('div');
-                        div.className = 'px-4 py-2 hover:bg-muted/20 cursor-pointer text-xs transition-colors border-b border-border/20 last:border-0';
-                        div.innerText = item.display_name;
+                        div.className = 'px-4 py-3 hover:bg-primary/5 cursor-pointer text-xs transition-colors border-b border-border/20 last:border-0';
+                        div.innerHTML = `<span class="font-bold text-foreground block">${item.display_name.split(',').slice(0,3).join(',')}</span>
+                            <span class="text-[10px] text-muted-foreground">${item.type || ''}</span>`;
                         div.onclick = () => {
                             const lat = parseFloat(item.lat);
                             const lon = parseFloat(item.lon);
-                            map.setView([lat, lon], 16);
+                            map.setView([lat, lon], 17);
                             marker.setLatLng([lat, lon]);
                             updateInputs(lat, lon);
                             resultsEl.classList.add('hidden');
-                            searchInput.value = item.display_name;
+                            searchInput.value = item.display_name.split(',').slice(0,3).join(',');
                         };
                         resultsEl.appendChild(div);
                     });
                 });
         }
 
-        searchBtn.onclick = performSearch;
-        searchInput.onkeypress = (e) => { if(e.key === 'Enter') performSearch(); };
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            if(this.value.length < 2) { resultsEl.classList.add('hidden'); return; }
+            searchTimeout = setTimeout(performSearch, 400);
+        });
 
-        // Use Current Location
+        searchInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') { e.preventDefault(); performSearch(); } });
+
+        const searchBtn = document.getElementById('search-btn');
+        if(searchBtn) searchBtn.onclick = performSearch;
+
         document.getElementById('use-current-location').onclick = () => {
             if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    map.setView([lat, lon], 16);
-                    marker.setLatLng([lat, lon]);
-                    updateInputs(lat, lon);
-                });
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        if(tunisiaBounds.contains([lat, lon])) {
+                            map.setView([lat, lon], 17);
+                            marker.setLatLng([lat, lon]);
+                            updateInputs(lat, lon);
+                        } else {
+                            alert('Location is outside Tunisia');
+                        }
+                    },
+                    function() { alert('Unable to retrieve your location'); }
+                );
             }
         };
 
-        // Close search results on outside click
         document.addEventListener('click', (e) => {
             if(!resultsEl.contains(e.target) && e.target !== searchInput) {
                 resultsEl.classList.add('hidden');
             }
         });
+
+        @if($client && $client->lat && $client->lon)
+            map.setView([{{ $client->lat }}, {{ $client->lon }}], 16);
+            marker.setLatLng([{{ $client->lat }}, {{ $client->lon }}]);
+        @endif
     </script>
 @endpush

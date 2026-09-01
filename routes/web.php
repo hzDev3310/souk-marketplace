@@ -42,12 +42,16 @@ Route::middleware(['web'])->group(function () {
     Route::post('/favorites/toggle', [PublicController::class, 'toggleFavorite'])->name('public.favorites.toggle');
 
     Route::get('/checkout', [PublicController::class, 'checkout'])->name('public.checkout');
-    Route::post('/checkout', [PublicController::class, 'processCheckout'])->name('public.checkout.process');
+    Route::post('/checkout', [PublicController::class, 'sendOtp'])->name('public.checkout.send-otp');
+    Route::get('/checkout/verify', [PublicController::class, 'showOtpVerify'])->name('public.checkout.verify');
+    Route::post('/checkout/verify', [PublicController::class, 'verifyOtp'])->name('public.checkout.verify.submit');
+    Route::post('/checkout/process', [PublicController::class, 'processCheckout'])->name('public.checkout.process');
 
     Route::middleware('auth')->group(function() {
         Route::get('/profile', [PublicController::class, 'profile'])->name('public.profile');
         Route::post('/profile', [PublicController::class, 'updateProfile'])->name('public.profile.update');
         Route::get('/orders', [PublicController::class, 'orders'])->name('public.orders');
+        Route::post('/orders/{order}/cancel', [PublicController::class, 'cancelOrder'])->name('public.orders.cancel');
     });
 
     // Auth Pages (Public Storefront)

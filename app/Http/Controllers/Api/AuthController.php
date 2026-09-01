@@ -131,8 +131,9 @@ class AuthController extends Controller
             }
         }
 
-        // Cookie-based login
-        Auth::login($user);
+        // Cookie-based login using the dedicated dashboard (`react_app`) guard so the
+        // public storefront session and the dashboard session never collide.
+        Auth::guard('react_app')->login($user);
         $request->session()->regenerate();
 
         return response()->json([
@@ -146,7 +147,7 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        Auth::logout();
+        Auth::guard('react_app')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
@@ -202,8 +203,9 @@ class AuthController extends Controller
      */
     public function check(Request $request)
     {
-        if (Auth::check()) {
-            $user = Auth::user();
+        $auth = Auth::guard('react_app');
+        if ($auth->check()) {
+            $user = $auth->user();
             $role = strtolower($user->role);
             
             // Handle relationship name mapping

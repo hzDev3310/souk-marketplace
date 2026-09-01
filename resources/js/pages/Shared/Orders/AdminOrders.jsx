@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 import { imageFallback } from '@/utils/imageFallback';
 import CardBox from "@/components/shared/CardBox";
@@ -46,17 +47,27 @@ import {
 const Orders = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const isAdmin = user?.role === "ADMIN";
+    const canManageOrders = isAdmin;
+    const storeId = user?.store?.id;
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(false);
     const [verifying, setVerifying] = useState(false);
     const [search, setSearch] = useState("");
     const [viewingOrder, setViewingOrder] = useState(null);
 
+    const getStoreItems = (order) => {
+        if (!order?.items) return [];
+        if (!storeId) return order.items;
+        return order.items.filter((item) => item.store_id === storeId || item.product?.store_id === storeId);
+    };
+
     const fetchOrders = async () => {
         setLoading(true);
         try {
-            console.log("Fetching admin orders from /api/admin/orders...");
-            const response = await api.get("/admin/orders");
+            const endpoint = isAdmin ? "/admin/orders" : "/store/orders";
+            const response = await api.get(endpoint);
             const payload = response?.data;
             let nextOrders = [];
 
@@ -68,14 +79,9 @@ const Orders = () => {
                 nextOrders = payload.data.data;
             }
 
-            console.log("Admin orders fetch response:", payload);
-            console.log("Parsed admin orders:", nextOrders);
             setOrders(nextOrders);
         } catch (error) {
-            console.error("Error fetching orders: full error object:", error);
-            console.error("Error fetching orders: response data:", error?.response?.data);
-            console.error("Error fetching orders: status:", error?.response?.status);
-            console.error("Error fetching orders: headers:", error?.response?.headers);
+            console.error("Error fetching orders:", error);
             setOrders([]);
         } finally {
             setLoading(false);
@@ -83,10 +89,13 @@ const Orders = () => {
     };
 
     useEffect(() => {
-        fetchOrders();
-    }, []);
+        if (isAdmin || storeId) {
+            fetchOrders();
+        }
+    }, [isAdmin, storeId]);
 
     const updateStatus = async (orderId, status) => {
+        if (!canManageOrders) return;
         try {
             await api.put(`/admin/orders/${orderId}`, { status });
             fetchOrders();
@@ -100,6 +109,7 @@ const Orders = () => {
     };
 
     const handleVerify = async (orderId) => {
+        if (!canManageOrders) return;
         setVerifying(true);
         try {
             await api.post(`/admin/orders/${orderId}/confirm-manually`);
@@ -116,6 +126,7 @@ const Orders = () => {
     };
 
     const updateItemStatus = async (orderId, itemId, status) => {
+        if (!canManageOrders) return;
         try {
             await api.post(`/admin/orders/${orderId}/items/${itemId}/status`, { status });
             if (viewingOrder && viewingOrder.id === orderId) {
@@ -129,6 +140,7 @@ const Orders = () => {
     };
 
     const removeItem = async (orderId, itemId) => {
+        if (!canManageOrders) return;
         if (!confirm(t("admin.orders.messages.confirmRemoveItem") || "Are you sure you want to remove this item?")) return;
         try {
             await api.delete(`/admin/orders/${orderId}/items/${itemId}`);
@@ -183,7 +195,14 @@ const Orders = () => {
         }
     };
 
-    const filteredOrders = orders.filter(order => {
+    const visibleOrders = !isAdmin && storeId
+        ? orders.filter(order => {
+            if (!order?.items) return false;
+            return getStoreItems(order).length > 0;
+        })
+        : orders;
+
+    const filteredOrders = visibleOrders.filter(order => {
         const orderNumber = String(order?.order_number || order?.id || "");
         const clientName = String(order?.client?.user?.name || "");
         const query = (search || "").toLowerCase();
@@ -196,8 +215,8 @@ const Orders = () => {
 
     return (
         <AdminPageLayout
-            title="admin.orders.title"
-            subtitle="admin.orders.subtitle"
+            title={isAdmin ? "admin.orders.title" : "store.orders.title"}
+            subtitle={isAdmin ? "admin.orders.subtitle" : "store.orders.subtitle"}
             icon={ShoppingCart}
         >
             <div className="space-y-6 text-start">
@@ -205,7 +224,7 @@ const Orders = () => {
                     <div className="relative flex-1 max-w-md group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
                         <Input
-                            placeholder={t("admin.orders.search")}
+                            placeholder={isAdmin ? t("admin.orders.search") : t("store.orders.search") || "Search orders..."}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="pl-12 h-12 bg-card border-border/60 rounded-2xl"
@@ -263,30 +282,32 @@ const Orders = () => {
                                             <span className="text-[10px] text-muted-foreground">TND</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                                <Button
-                                                    size="iconsm" variant="soft" rounded="xl" color="info"
-                                                    onClick={() => navigate(`/dashboard/orders/${order.order_number || order.id}`)}
-                                                >
-                                                    <Eye size={18} />
-                                                </Button>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button size="icon" variant="ghost" rounded="2xl" className="bg-muted/50 hover:bg-muted">
-                                                        <ChevronDown size={18} />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="bg-card border-border/50 rounded-xl">
-                                                    {["confirme", "imported_to_depot", "en_livraison", "livree", "retournee", "annule"].map(s => (
-                                                        <DropdownMenuItem
-                                                            key={s}
-                                                            onClick={() => updateStatus(order.id, s)}
-                                                            className="text-[11px] font-bold uppercase transition-colors hover:bg-muted"
-                                                        >
-                                                            {getStatusConfig(s).label}
-                                                        </DropdownMenuItem>
-                                                    ))}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                            <Button
+                                                size="iconsm" variant="soft" rounded="xl" color="info"
+                                                onClick={() => navigate(`/dashboard/orders/${order.order_number || order.id}`)}
+                                            >
+                                                <Eye size={18} />
+                                            </Button>
+                                            {isAdmin && (
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button size="icon" variant="ghost" rounded="2xl" className="bg-muted/50 hover:bg-muted">
+                                                            <ChevronDown size={18} />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="bg-card border-border/50 rounded-xl">
+                                                        {["confirme", "imported_to_depot", "en_livraison", "livree", "retournee", "annule"].map(s => (
+                                                            <DropdownMenuItem
+                                                                key={s}
+                                                                onClick={() => updateStatus(order.id, s)}
+                                                                className="text-[11px] font-bold uppercase transition-colors hover:bg-muted"
+                                                            >
+                                                                {getStatusConfig(s).label}
+                                                            </DropdownMenuItem>
+                                                        ))}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -364,24 +385,26 @@ const Orders = () => {
                                                     <Eye size={18} />
                                                 </Button>
                                                 
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button size="iconsm" variant="ghost" rounded="xl" className="hover:bg-muted">
-                                                            <ChevronDown size={18} />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="bg-card border-border/50 rounded-xl">
-                                                        {["confirme", "imported_to_depot", "en_livraison", "livree", "retournee", "annule"].map(s => (
-                                                            <DropdownMenuItem 
-                                                                key={s} 
-                                                                onClick={() => updateStatus(order.id, s)}
-                                                                className="text-[11px] font-bold uppercase transition-colors hover:bg-muted"
-                                                            >
-                                                                {getStatusConfig(s).label}
-                                                            </DropdownMenuItem>
-                                                        ))}
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                                {isAdmin && (
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button size="iconsm" variant="ghost" rounded="xl" className="hover:bg-muted">
+                                                                <ChevronDown size={18} />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="bg-card border-border/50 rounded-xl">
+                                                            {["confirme", "imported_to_depot", "en_livraison", "livree", "retournee", "annule"].map(s => (
+                                                                <DropdownMenuItem 
+                                                                    key={s} 
+                                                                    onClick={() => updateStatus(order.id, s)}
+                                                                    className="text-[11px] font-bold uppercase transition-colors hover:bg-muted"
+                                                                >
+                                                                    {getStatusConfig(s).label}
+                                                                </DropdownMenuItem>
+                                                            ))}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                )}
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -407,7 +430,7 @@ const Orders = () => {
                     maxWidth="max-w-4xl"
                     footer={
                         <div className="flex gap-3">
-                             {['en_attente', 'confirme'].includes(String(viewingOrder?.status || '').toLowerCase()) && (
+                            {isAdmin && ['en_attente', 'confirme'].includes(String(viewingOrder?.status || '').toLowerCase()) && (
                                 <Button 
                                     onClick={() => handleVerify(viewingOrder.id)} 
                                     disabled={verifying}
@@ -417,20 +440,22 @@ const Orders = () => {
                                     CONFIRMER MANUELLEMENT
                                 </Button>
                             )}
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" rounded="xl" className="font-black">
-                                        STATUT <ChevronDown size={14} />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="rounded-xl border-border/50 bg-background/95 backdrop-blur-xl">
-                                    {["confirme", "imported_to_depot", "en_livraison", "livree", "retournee", "annule"].map(s => (
-                                        <DropdownMenuItem key={s} onClick={() => updateStatus(viewingOrder.id, s)} className="font-bold text-[10px] uppercase">
-                                            {getStatusConfig(s).label}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            {isAdmin && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" rounded="xl" className="font-black">
+                                            STATUT <ChevronDown size={14} />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="rounded-xl border-border/50 bg-background/95 backdrop-blur-xl">
+                                        {["confirme", "imported_to_depot", "en_livraison", "livree", "retournee", "annule"].map(s => (
+                                            <DropdownMenuItem key={s} onClick={() => updateStatus(viewingOrder.id, s)} className="font-bold text-[10px] uppercase">
+                                                {getStatusConfig(s).label}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
                             <Button onClick={() => setViewingOrder(null)} rounded="xl" className="font-black bg-muted text-foreground hover:bg-muted/80">
                                 {t("admin.orders.view.close") || "Close"}
                             </Button>
@@ -547,13 +572,15 @@ const Orders = () => {
                                                             </TableCell>
                                                             <TableCell className="text-center font-bold text-xs">x {item.quantity}</TableCell>
                                                             <TableCell className="text-end font-black text-primary text-sm">{item.price * item.quantity} TND</TableCell>
-                                                            <TableCell className="text-end">
-                                                                <Tooltip content={t('common.actions.delete')}>
-                                                                    <Button variant="soft" size="iconsm" rounded="full" color="error" onClick={() => removeItem(viewingOrder.id, item.id)}>
-                                                                        <XCircle size={14} />
-                                                                    </Button>
-                                                                </Tooltip>
-                                                            </TableCell>
+                                                            {isAdmin && (
+                                                                <TableCell className="text-end">
+                                                                    <Tooltip content={t('common.actions.delete')}>
+                                                                        <Button variant="soft" size="iconsm" rounded="full" color="error" onClick={() => removeItem(viewingOrder.id, item.id)}>
+                                                                            <XCircle size={14} />
+                                                                        </Button>
+                                                                    </Tooltip>
+                                                                </TableCell>
+                                                            )}
                                                         </TableRow>
                                                     ))}
                                                 </TableBody>
